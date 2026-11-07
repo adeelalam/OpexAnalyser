@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  type ChartOptions,
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 
@@ -33,7 +34,7 @@ const chartData = computed(() => ({
   ],
 }))
 
-const chartOptions = {
+const chartOptions: ChartOptions<'bar'> = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -42,8 +43,10 @@ const chartOptions = {
     },
     tooltip: {
       callbacks: {
-        label: (context: { parsed: { y: number } }) =>
-          `SEK ${context.parsed.y.toLocaleString('sv-SE')}`,
+        label: (context) => {
+          const value = context.parsed.y ?? 0
+          return `SEK ${value.toLocaleString('sv-SE')}`
+        },
       },
     },
   },
@@ -51,7 +54,7 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       ticks: {
-        callback: (value: string | number) => `SEK ${Number(value).toLocaleString('sv-SE')}`,
+        callback: (value) => `SEK ${Number(value).toLocaleString('sv-SE')}`,
       },
       grid: {
         color: '#e2e8f0',
