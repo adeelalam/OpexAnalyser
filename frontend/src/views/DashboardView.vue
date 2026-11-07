@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Wallet, TrendingUp, CircleDollarSign, ChartNoAxesCombined } from 'lucide-vue-next'
+import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 
 const summaryCards = [
   {
@@ -115,21 +116,11 @@ const recentExpenses = [
 
         <p class="mt-1 text-sm text-slate-500">Expense trend over the last six months</p>
 
-        <div class="mt-8 flex h-56 items-end justify-around gap-4">
-          <div
-            v-for="item in monthlyExpenses"
-            :key="item.month"
-            class="flex h-full flex-1 flex-col items-center justify-end gap-3"
-          >
-            <div
-              class="w-full max-w-12 rounded-t-lg bg-blue-500 transition-all hover:bg-blue-600"
-              :style="{ height: `${item.amount}%` }"
-            />
-
-            <span class="text-xs text-slate-500">
-              {{ item.month }}
-            </span>
-          </div>
+        <div class="mt-8">
+          <MonthlyExpensesChart
+            :labels="monthlyExpenses.map((item) => item.month)"
+            :amounts="monthlyExpenses.map((item) => item.amount)"
+          />
         </div>
       </section>
 
