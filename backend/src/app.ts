@@ -2,8 +2,16 @@ import express from "express";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import cors from "cors";
 
 const app = express();
+
+// CORS: allow requests from the Vue frontend
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 // Middleware: allows Express to read JSON request bodies
 app.use(express.json());

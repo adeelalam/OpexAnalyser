@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Wallet, TrendingUp, CircleDollarSign, ChartNoAxesCombined } from 'lucide-vue-next'
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
+import { onMounted, ref } from 'vue'
+import { getExpenses, type Expense } from '@/services/expenseService'
 
 const summaryCards = [
   {
@@ -72,6 +74,28 @@ const recentExpenses = [
     status: 'Approved',
   },
 ]
+
+const expenses = ref<Expense[]>([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const loadExpenses = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    expenses.value = await getExpenses()
+  } catch (error) {
+    console.error('Failed to load expenses:', error)
+    errorMessage.value = 'Unable to load expenses. Please try again.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadExpenses()
+})
 </script>
 
 <template>
@@ -180,35 +204,33 @@ const recentExpenses = [
             </tr>
           </thead>
 
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="expense in recentExpenses" :key="expense.description">
-              <td class="whitespace-nowrap px-6 py-4 font-medium text-slate-800">
-                {{ expense.description }}
-              </td>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="5" class="px-6 py-8 text-center text-slate-500">Loading expenses...</td>
+            </tr>
 
-              <td class="whitespace-nowrap px-6 py-4 text-slate-600">
-                {{ expense.department }}
+            <tr v-else-if="errorMessage">
+              <td colspan="5" class="px-6 py-8 text-center text-red-500">
+                {{ errorMessage }}
               </td>
+            </tr>
 
-              <td class="whitespace-nowrap px-6 py-4 text-slate-600">
-                {{ expense.category }}
-              </td>
+            <tr v-else-if="expenses.length === 0">
+              <td colspan="5" class="px-6 py-8 text-center text-slate-500">No expenses found.</td>
+            </tr>
 
-              <td class="whitespace-nowrap px-6 py-4 font-medium text-slate-800">
-                {{ expense.amount }}
-              </td>
-
-              <td class="whitespace-nowrap px-6 py-4">
-                <span
-                  :class="[
-                    'rounded-full px-3 py-1 text-xs font-medium',
-                    expense.status === 'Approved'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700',
-                  ]"
-                >
-                  {{ expense.status }}
-                </span>
+            <tr
+              v-else
+              v-for="expense in expenses.slice(0, 5)"
+              :key="expense.id"
+              class="border-t border-slate-100"
+            >
+              <td class="px-6 py-4">{{ expense.description }}</td>
+              <td class="px-6 py-4">{{ expense.category }}</td>
+              <td class="px-6 py-4">{{ expense.department }}</td>
+              <td class="px-6 py-4">{{ expense.amount.toLocaleString('sv-SE') }} SEK</td>
+              <td class="px-6 py-4">
+                {{ new Date(expense.expenseDate).toLocaleDateString('sv-SE') }}
               </td>
             </tr>
           </tbody>
