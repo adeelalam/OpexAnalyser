@@ -27,10 +27,7 @@ export async function createExpense(data: CreateExpenseInput) {
   });
 }
 
-export async function updateExpense(
-  id: string,
-  data: CreateExpenseInput
-) {
+export async function updateExpense(id: string, data: CreateExpenseInput) {
   return prisma.expense.update({
     where: { id },
     data: {

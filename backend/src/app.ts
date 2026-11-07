@@ -1,4 +1,3 @@
-
 import express from "express";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import { prisma } from "./db/prisma.js";
@@ -10,18 +9,18 @@ app.use(express.json());
 
 // Root endpoint
 app.get("/", (req, res) => {
-    res.status(200).json({
-        application: "OpexAnalyser",
-        message: "Backend API is running",
-    });
+  res.status(200).json({
+    application: "OpexAnalyser",
+    message: "Backend API is running",
+  });
 });
 
 // Health-check endpoint
 app.get("/health", (req, res) => {
-    res.status(200).json({
-        status: "Healthy",
-        timestamp: new Date().toISOString(),
-    });
+  res.status(200).json({
+    status: "Healthy",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use("/api/expenses", expenseRoutes);

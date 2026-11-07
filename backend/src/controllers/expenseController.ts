@@ -39,10 +39,7 @@ function getExpenseId(req: Request): string | null {
 }
 
 // GET /api/expenses
-export async function getExpenses(
-  _req: Request,
-  res: Response
-) {
+export async function getExpenses(_req: Request, res: Response) {
   try {
     const expenses = await getAllExpenses();
     res.status(200).json(expenses);
@@ -53,10 +50,7 @@ export async function getExpenses(
 }
 
 // GET /api/expenses/:id
-export async function getExpense(
-  req: Request,
-  res: Response
-) {
+export async function getExpense(req: Request, res: Response) {
   const id = getExpenseId(req);
 
   if (!id) {
@@ -80,10 +74,7 @@ export async function getExpense(
 }
 
 // POST /api/expenses
-export async function addExpense(
-  req: Request,
-  res: Response
-) {
+export async function addExpense(req: Request, res: Response) {
   if (!isValidExpense(req.body)) {
     res.status(400).json({ message: "Invalid expense data" });
     return;
@@ -99,13 +90,9 @@ export async function addExpense(
 }
 
 // PUT /api/expenses/:id
-export async function editExpense(
-  req: Request,
-  res: Response
-) {
-
+export async function editExpense(req: Request, res: Response) {
   const id = getExpenseId(req);
-    
+
   if (!id) {
     res.status(400).json({ message: "Invalid expense ID" });
     return;
@@ -133,16 +120,13 @@ export async function editExpense(
 }
 
 // DELETE /api/expenses/:id
-export async function removeExpense(
-  req: Request,
-  res: Response
-) {
-    const id = getExpenseId(req);
+export async function removeExpense(req: Request, res: Response) {
+  const id = getExpenseId(req);
 
-if (!id) {
-  res.status(400).json({ message: "Invalid expense ID" });
-  return;
-}
+  if (!id) {
+    res.status(400).json({ message: "Invalid expense ID" });
+    return;
+  }
   try {
     const existingExpense = await getExpenseById(id);
 
