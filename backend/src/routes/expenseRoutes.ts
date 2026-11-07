@@ -8,21 +8,14 @@ import {
   removeExpense,
 } from "../controllers/expenseController.js";
 
+import { asyncHandler } from "../middleware/asyncHandler.js";
+
 const router = Router();
 
-// GET /api/expenses
-router.get("/", getExpenses);
-
-// GET /api/expenses/:id
-router.get("/:id", getExpense);
-
-// POST /api/expenses
-router.post("/", addExpense);
-
-// PUT /api/expenses/:id
-router.put("/:id", editExpense);
-
-// DELETE /api/expenses/:id
-router.delete("/:id", removeExpense);
+router.get("/", asyncHandler(getExpenses));
+router.get("/:id", asyncHandler(getExpense));
+router.post("/", asyncHandler(addExpense));
+router.put("/:id", asyncHandler(editExpense));
+router.delete("/:id", asyncHandler(removeExpense));
 
 export default router;

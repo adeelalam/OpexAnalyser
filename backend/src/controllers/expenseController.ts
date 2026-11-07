@@ -40,13 +40,9 @@ function getExpenseId(req: Request): string | null {
 
 // GET /api/expenses
 export async function getExpenses(_req: Request, res: Response) {
-  try {
-    const expenses = await getAllExpenses();
-    res.status(200).json(expenses);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Could not retrieve expenses" });
-  }
+  const expenses = await getAllExpenses();
+
+  res.status(200).json(expenses);
 }
 
 // GET /api/expenses/:id
@@ -58,19 +54,14 @@ export async function getExpense(req: Request, res: Response) {
     return;
   }
 
-  try {
-    const expense = await getExpenseById(id);
+  const expense = await getExpenseById(id);
 
-    if (!expense) {
-      res.status(404).json({ message: "Expense not found" });
-      return;
-    }
-
-    res.status(200).json(expense);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Could not retrieve expense" });
+  if (!expense) {
+    res.status(404).json({ message: "Expense not found" });
+    return;
   }
+
+  res.status(200).json(expense);
 }
 
 // POST /api/expenses
@@ -80,13 +71,9 @@ export async function addExpense(req: Request, res: Response) {
     return;
   }
 
-  try {
-    const expense = await createExpense(req.body);
-    res.status(201).json(expense);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Could not create expense" });
-  }
+  const expense = await createExpense(req.body);
+
+  res.status(201).json(expense);
 }
 
 // PUT /api/expenses/:id
@@ -103,20 +90,16 @@ export async function editExpense(req: Request, res: Response) {
     return;
   }
 
-  try {
-    const existingExpense = await getExpenseById(id);
+  const existingExpense = await getExpenseById(id);
 
-    if (!existingExpense) {
-      res.status(404).json({ message: "Expense not found" });
-      return;
-    }
-
-    const expense = await updateExpense(id, req.body);
-    res.status(200).json(expense);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Could not update expense" });
+  if (!existingExpense) {
+    res.status(404).json({ message: "Expense not found" });
+    return;
   }
+
+  const expense = await updateExpense(id, req.body);
+
+  res.status(200).json(expense);
 }
 
 // DELETE /api/expenses/:id
@@ -127,21 +110,17 @@ export async function removeExpense(req: Request, res: Response) {
     res.status(400).json({ message: "Invalid expense ID" });
     return;
   }
-  try {
-    const existingExpense = await getExpenseById(id);
 
-    if (!existingExpense) {
-      res.status(404).json({ message: "Expense not found" });
-      return;
-    }
+  const existingExpense = await getExpenseById(id);
 
-    await deleteExpense(id);
-
-    res.status(200).json({
-      message: "Expense deleted successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Could not delete expense" });
+  if (!existingExpense) {
+    res.status(404).json({ message: "Expense not found" });
+    return;
   }
+
+  await deleteExpense(id);
+
+  res.status(200).json({
+    message: "Expense deleted successfully",
+  });
 }

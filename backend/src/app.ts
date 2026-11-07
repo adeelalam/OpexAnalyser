@@ -1,6 +1,7 @@
 import express from "express";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import { prisma } from "./db/prisma.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -45,10 +46,13 @@ app.get("/health/database", async (_req, res) => {
 });
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     message: "Route not found",
   });
 });
+
+// Centralized error handler — must be last
+app.use(errorHandler);
 
 export default app;
