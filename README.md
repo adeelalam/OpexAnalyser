@@ -39,7 +39,7 @@ OpexAnalyser aims to help organizations manage operating expenses, monitor budge
 | Tailwind CSS    | Styling                           |
 | Lucide Vue Next | Icons                             |
 | Axios           | API communication (planned)       |
-| Chart.js        | Data visualization (planned)      |
+| Chart.js        | Data visualization                |
 
 ## Project Structure
 
@@ -186,7 +186,7 @@ npm run build
 - [x] Reusable sidebar and header components
 - [x] Initial dashboard interface
 - [x] Application routing
-- [ ] Interactive dashboard charts
+- [x] Interactive dashboard charts
 - [ ] Responsive navigation
 - [ ] Complete expense management interface
 - [ ] Frontend and backend integration
