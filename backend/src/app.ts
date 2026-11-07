@@ -1,6 +1,7 @@
 
 import express from "express";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import { prisma } from "./db/prisma.js";
 
 const app = express();
 
@@ -24,6 +25,25 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/expenses", expenseRoutes);
+
+app.get("/health/database", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
+    res.status(200).json({
+      status: "Connected",
+      database: "PostgreSQL",
+      message: "Database connection successful",
+    });
+  } catch (error) {
+    console.error("Database connection failed:", error);
+
+    res.status(503).json({
+      status: "Unavailable",
+      message: "Could not connect to the database",
+    });
+  }
+});
 
 // 404 handler
 app.use((req, res) => {
