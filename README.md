@@ -1,49 +1,47 @@
 # OpexAnalyser
 
-**A full-stack operating expenditure (OPEX) analysis application.**
+A full-stack operating expense management and analysis application built with **Node.js, TypeScript, Express, PostgreSQL, Prisma and Vue 3**.
 
-OpexAnalyser is a business-focused application designed to help organizations manage, track, and analyze operating expenses across departments and expense categories.
-
-The project is being developed backend-first, with a focus on REST API development, database design, clean architecture, and practical full-stack engineering.
+OpexAnalyser aims to help organizations manage operating expenses, monitor budgets, analyze spending patterns and make better financial decisions.
 
 ## Project Goals
 
-- Manage and track business operating expenses.
+- Manage and track operating expenses.
 - Organize expenses by category and department.
-- Support budget planning and expense monitoring.
-- Compare actual expenditure against budgets.
-- Provide monthly and yearly expense insights.
+- Monitor monthly and yearly budgets.
+- Compare actual expenses against allocated budgets.
+- Visualize expense trends and spending patterns.
 - Import expense data from CSV and Excel files.
-- Generate reports and financial summaries.
-- Explore AI-powered expense analysis and anomaly detection.
+- Identify unusual spending and potential cost-saving opportunities.
+- Explore AI-powered financial insights.
 
 ## Technology Stack
 
 ### Backend
-- Node.js
-- TypeScript
-- Express.js
-- PostgreSQL
-- Prisma ORM
 
-### Frontend (Planned)
-- Vue 3
-- TypeScript
-- Vite
-- Pinia
-- Vue Router
-- Tailwind CSS
-- Chart.js
+| Technology | Purpose                        |
+| ---------- | ------------------------------ |
+| Node.js    | JavaScript runtime             |
+| TypeScript | Type safety                    |
+| Express.js | REST API                       |
+| PostgreSQL | Relational database            |
+| Prisma ORM | Database access and migrations |
 
-### Development Tools
-- Git and GitHub
-- Postman
-- pgAdmin
-- Visual Studio Code
+### Frontend
 
-## Architecture
+| Technology      | Purpose                           |
+| --------------- | --------------------------------- |
+| Vue 3           | Frontend framework                |
+| TypeScript      | Type safety                       |
+| Vite            | Development server and build tool |
+| Vue Router      | Application navigation            |
+| Pinia           | State management                  |
+| Tailwind CSS    | Styling                           |
+| Lucide Vue Next | Icons                             |
+| Axios           | API communication (planned)       |
+| Chart.js        | Data visualization (planned)      |
 
-The application is being developed using a layered backend architecture.
+## Project Structure
 
 ```text
 OpexAnalyser/
@@ -54,172 +52,163 @@ OpexAnalyser/
 │   │   └── schema.prisma
 │   │
 │   ├── src/
+│   │   ├── controllers/
 │   │   ├── db/
+│   │   ├── middleware/
 │   │   ├── routes/
+│   │   ├── services/
 │   │   ├── types/
 │   │   ├── app.ts
 │   │   └── server.ts
 │   │
 │   ├── .env
-│   ├── package.json
-│   └── tsconfig.json
+│   └── package.json
 │
-├── README.md
-└── .gitignore
+├── frontend/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   │   └── layout/
+│   │   ├── router/
+│   │   ├── stores/
+│   │   ├── services/
+│   │   ├── types/
+│   │   ├── views/
+│   │   ├── App.vue
+│   │   └── main.ts
+│   │
+│   └── package.json
+│
+└── README.md
 ```
-
-*The structure will evolve as additional application layers and features are introduced.*
-
-## Current Development Status
-
-### Completed
-- [x] Initial Node.js and TypeScript project setup
-- [x] Express.js server configuration
-- [x] Basic API endpoints
-- [x] Expense REST API with CRUD operations using temporary in-memory storage
-- [x] PostgreSQL database setup
-- [x] Initial Prisma schema and Expense model
-- [x] Database migration
-- [x] Prisma Client configuration
-- [x] Database health-check endpoint implementation
-
-### In Progress
-- [ ] Verify database connectivity through the API
-- [ ] Integrate Prisma with expense CRUD endpoints
-- [ ] Replace temporary in-memory storage with PostgreSQL persistence
-- [ ] Improve API validation and error handling
-- [ ] Introduce service and repository layers
-
-### Planned
-- [ ] Department and expense category management
-- [ ] Budget management
-- [ ] Budget versus actual expenditure analysis
-- [ ] Monthly and yearly reporting
-- [ ] CSV and Excel imports
-- [ ] Authentication and role-based authorization
-- [ ] Automated testing with Jest and Supertest
-- [ ] API documentation with Swagger/OpenAPI
-- [ ] Vue 3 frontend
-- [ ] Data visualization and dashboards
-- [ ] Docker-based development environment
-- [ ] CI/CD pipeline
-- [ ] AI-assisted expense analysis
 
 ## Getting Started
 
 ### Prerequisites
 
-Make sure you have installed:
+Install the following:
 
-- Node.js 20.19 or newer
-- npm
+- Node.js and npm
 - PostgreSQL
 - Git
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/OpexAnalyser.git
+git clone https://github.com/adeelalam/OpexAnalyser.git
 cd OpexAnalyser
 ```
 
-### 2. Install backend dependencies
+### 2. Configure the backend
 
 ```bash
 cd backend
 npm install
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file inside the `backend` directory.
+Create a `.env` file inside the backend directory and configure your PostgreSQL connection:
 
 ```env
-DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/opex_analyser?schema=public"
+DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/opex_analyser"
 ```
 
-Replace the database credentials with your local PostgreSQL configuration.
+Replace the username and password with your local PostgreSQL credentials.
 
-**Important:** Never commit your `.env` file or database credentials to GitHub.
-
-### 4. Generate Prisma Client
-
-```bash
-npx prisma generate
-```
-
-### 5. Run database migrations
+Apply pending Prisma migrations:
 
 ```bash
 npx prisma migrate dev
 ```
 
-### 6. Build the backend
-
-```bash
-npm run build
-```
-
-### 7. Start the development server
+Start the backend development server:
 
 ```bash
 npm run dev
 ```
 
-The API runs locally at:
+The API runs at:
 
-```text
-http://localhost:3000
+`http://localhost:3000`
+
+### 3. Configure the frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-## API Endpoints
+The frontend runs at:
 
-The initial expense API supports the following operations:
+`http://localhost:5173`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/expenses` | Retrieve all expenses |
-| GET | `/api/expenses/:id` | Retrieve an expense |
-| POST | `/api/expenses` | Create an expense |
-| PUT | `/api/expenses/:id` | Update an expense |
-| DELETE | `/api/expenses/:id` | Delete an expense |
-| GET | `/health` | API health check |
-| GET | `/health/database` | Database health check |
+### 4. Build for production
 
-*Expense endpoints initially use temporary in-memory storage; PostgreSQL integration is in progress.*
+Backend:
 
-## Development Philosophy
+```bash
+cd backend
+npm run build
+```
 
-OpexAnalyser is being developed incrementally, with an emphasis on:
+Frontend:
 
-- TypeScript-first development
-- RESTful API design
-- Maintainable and scalable architecture
-- Database integrity and data consistency
-- Input validation and secure coding practices
-- Automated testing
-- Production-ready development practices
+```bash
+cd frontend
+npm run build
+```
 
-## Roadmap
+## Current API Endpoints
 
-The development roadmap follows these major phases:
+| Method | Endpoint            | Description               |
+| ------ | ------------------- | ------------------------- |
+| GET    | `/health`           | API health check          |
+| GET    | `/health/database`  | Database connection check |
+| GET    | `/api/expenses`     | Retrieve all expenses     |
+| GET    | `/api/expenses/:id` | Retrieve an expense       |
+| POST   | `/api/expenses`     | Create an expense         |
+| PUT    | `/api/expenses/:id` | Update an expense         |
+| DELETE | `/api/expenses/:id` | Delete an expense         |
 
-1. Backend foundations and Express.js
-2. PostgreSQL and Prisma integration
-3. Expense management and business logic
-4. Authentication and authorization
-5. Reporting, analytics, and data imports
-6. Automated testing and API documentation
-7. Vue 3 frontend development
-8. Docker, CI/CD, and deployment
-9. AI-assisted financial insights
+## Development Progress
 
-## Project Status
+- [x] Node.js and TypeScript backend foundation
+- [x] Express.js REST API
+- [x] PostgreSQL database integration
+- [x] Prisma ORM integration
+- [x] Expense CRUD API
+- [x] Layered backend architecture
+- [x] Centralized API error handling
+- [x] Vue 3 frontend foundation
+- [x] Tailwind CSS integration
+- [x] Reusable sidebar and header components
+- [x] Initial dashboard interface
+- [x] Application routing
+- [ ] Interactive dashboard charts
+- [ ] Responsive navigation
+- [ ] Complete expense management interface
+- [ ] Frontend and backend integration
+- [ ] OPEX business logic
+- [ ] Authentication and authorization
+- [ ] CSV/Excel imports
+- [ ] Advanced reporting and analytics
+- [ ] Automated testing
+- [ ] Production deployment
 
-<code>Active Development – Early Backend Stage</code>
+## Learning Objectives
 
-This project is under active development. Features and architecture may change as development progresses.
+This project is also a practical full-stack learning exercise, focusing on:
+
+- REST API design and backend architecture.
+- TypeScript and Node.js development.
+- Database design and ORM integration.
+- Frontend component architecture.
+- API communication and state management.
+- Data visualization and financial analytics.
+- Testing, security and deployment.
 
 ## License
 
-To be determined.
+This project is currently under development.
