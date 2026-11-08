@@ -16,3 +16,11 @@ export const getExpenses = async (): Promise<Expense[]> => {
 
   return response.data
 }
+
+export const createExpense = async (
+  expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<Expense> => {
+  const response = await api.post<Expense>('/api/expenses', expense)
+
+  return response.data
+}

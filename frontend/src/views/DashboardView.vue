@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { Wallet, TrendingUp, CircleDollarSign, ChartNoAxesCombined } from 'lucide-vue-next'
-import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import { onMounted, ref } from 'vue'
-import { getExpenses, type Expense } from '@/services/expenseService'
+
+import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
+import CreateExpenseForm from '@/components/expenses/CreateExpenseForm.vue'
+
+import { getExpenses, createExpense, type Expense } from '@/services/expenseService'
+
+import type { CreateExpenseInput } from '@/components/expenses/CreateExpenseForm.vue'
 
 const summaryCards = [
   {
@@ -80,6 +85,30 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const loadExpenses = async () => {
+  const showExpenseForm = ref(false)
+  const isCreatingExpense = ref(false)
+  const successMessage = ref('')
+
+  const handleCreateExpense = async (expense: CreateExpenseInput) => {
+    isCreatingExpense.value = true
+    errorMessage.value = ''
+    successMessage.value = ''
+
+    try {
+      await createExpense(expense)
+
+      showExpenseForm.value = false
+      successMessage.value = 'Expense created successfully!'
+
+      await loadExpenses()
+    } catch (error) {
+      console.error('Failed to create expense:', error)
+      errorMessage.value = 'Unable to create expense. Please try again.'
+    } finally {
+      isCreatingExpense.value = false
+    }
+  }
+
   isLoading.value = true
   errorMessage.value = ''
 
@@ -93,6 +122,30 @@ const loadExpenses = async () => {
   }
 }
 
+const showExpenseForm = ref(false)
+const isCreatingExpense = ref(false)
+const successMessage = ref('')
+
+const handleCreateExpense = async (expense: CreateExpenseInput) => {
+  isCreatingExpense.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await createExpense(expense)
+
+    showExpenseForm.value = false
+    successMessage.value = 'Expense created successfully!'
+
+    await loadExpenses()
+  } catch (error) {
+    console.error('Failed to create expense:', error)
+    errorMessage.value = 'Unable to create expense. Please try again.'
+  } finally {
+    isCreatingExpense.value = false
+  }
+}
+
 onMounted(() => {
   loadExpenses()
 })
@@ -101,9 +154,35 @@ onMounted(() => {
 <template>
   <div class="space-y-8">
     <!-- Page heading -->
-    <div>
-      <h1 class="text-2xl font-bold text-slate-800">Dashboard</h1>
-      <p class="mt-1 text-sm text-slate-500">Overview of your organization's operating expenses.</p>
+    <!-- Page heading -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Dashboard</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          Overview of your organization's operating expenses.
+        </p>
+      </div>
+
+      <button
+        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        @click="showExpenseForm = !showExpenseForm"
+      >
+        {{ showExpenseForm ? 'Close Form' : '+ Add Expense' }}
+      </button>
+    </div>
+
+    <!-- Create expense form -->
+    <section v-if="showExpenseForm">
+      <CreateExpenseForm
+        :is-submitting="isCreatingExpense"
+        @submit="handleCreateExpense"
+        @cancel="showExpenseForm = false"
+      />
+    </section>
+
+    <!-- Success message -->
+    <div v-if="successMessage" class="rounded-lg bg-green-50 p-4 text-sm text-green-700">
+      {{ successMessage }}
     </div>
 
     <!-- Summary cards -->
@@ -200,7 +279,7 @@ onMounted(() => {
               <th class="px-6 py-4">Department</th>
               <th class="px-6 py-4">Category</th>
               <th class="px-6 py-4">Amount</th>
-              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4">Expense Date</th>
             </tr>
           </thead>
 
@@ -226,8 +305,8 @@ onMounted(() => {
               class="border-t border-slate-100"
             >
               <td class="px-6 py-4">{{ expense.description }}</td>
-              <td class="px-6 py-4">{{ expense.category }}</td>
               <td class="px-6 py-4">{{ expense.department }}</td>
+              <td class="px-6 py-4">{{ expense.category }}</td>
               <td class="px-6 py-4">{{ expense.amount.toLocaleString('sv-SE') }} SEK</td>
               <td class="px-6 py-4">
                 {{ new Date(expense.expenseDate).toLocaleDateString('sv-SE') }}
