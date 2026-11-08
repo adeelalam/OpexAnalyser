@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { getExpenses, updateExpense, deleteExpense, type Expense } from '@/services/expenseService'
 
 type ExpenseFormData = Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>
@@ -17,6 +17,12 @@ const selectedCategory = ref('')
 const selectedDepartment = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
+
+const sortBy = ref<'description' | 'amount' | 'expenseDate'>('expenseDate')
+const sortDirection = ref<'asc' | 'desc'>('desc')
+
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 const categories = computed(() =>
   [...new Set(expenses.value.map((expense) => expense.category))].sort(),
@@ -45,6 +51,52 @@ const filteredExpenses = computed(() => {
 
     return matchesSearch && matchesCategory && matchesDepartment && matchesDateFrom && matchesDateTo
   })
+})
+
+const sortedExpenses = computed(() => {
+  return [...filteredExpenses.value].sort((a, b) => {
+    let comparison = 0
+
+    if (sortBy.value === 'amount') {
+      comparison = a.amount - b.amount
+    } else if (sortBy.value === 'description') {
+      comparison = a.description.localeCompare(b.description)
+    } else {
+      comparison = a.expenseDate.localeCompare(b.expenseDate)
+    }
+
+    return sortDirection.value === 'asc' ? comparison : -comparison
+  })
+})
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(sortedExpenses.value.length / pageSize.value)),
+)
+
+const paginatedExpenses = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+
+  return sortedExpenses.value.slice(start, start + pageSize.value)
+})
+
+const pageStart = computed(() =>
+  sortedExpenses.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1,
+)
+
+const pageEnd = computed(() =>
+  Math.min(currentPage.value * pageSize.value, sortedExpenses.value.length),
+)
+
+const toggleSortDirection = () => {
+  sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+}
+
+watch(filteredExpenses, () => {
+  currentPage.value = 1
+})
+
+watch(pageSize, () => {
+  currentPage.value = 1
 })
 
 const resetFilters = () => {
@@ -298,7 +350,7 @@ onMounted(() => {
           </thead>
 
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="expense in filteredExpenses" :key="expense.id" class="hover:bg-slate-50">
+            <tr v-for="expense in paginatedExpenses" :key="expense.id" class="hover:bg-slate-50">
               <td class="px-6 py-4 font-medium text-slate-800">
                 {{ expense.description }}
               </td>
@@ -335,6 +387,46 @@ onMounted(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+      <!-- Pagination -->
+      <div
+        v-if="filteredExpenses.length > 0"
+        class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-6 py-4"
+      >
+        <div class="flex items-center gap-3 text-sm text-slate-600">
+          <span>
+            Showing {{ pageStart }}–{{ pageEnd }} of {{ filteredExpenses.length }} expenses
+          </span>
+
+          <select v-model.number="pageSize" class="rounded-lg border border-slate-300 px-2 py-1">
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+          </select>
+          <span>per page</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            :disabled="currentPage === 1"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+            @click="currentPage--"
+          >
+            Previous
+          </button>
+
+          <span class="text-sm text-slate-600"> Page {{ currentPage }} of {{ totalPages }} </span>
+
+          <button
+            type="button"
+            :disabled="currentPage >= totalPages"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+            @click="currentPage++"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
 
@@ -403,6 +495,27 @@ onMounted(() => {
           Reset filters
         </button>
       </div>
+    </div>
+
+    <!-- Sorting controls -->
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 p-6">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> Sort by </label>
+
+        <select v-model="sortBy" class="rounded-lg border border-slate-300 px-3 py-2">
+          <option value="expenseDate">Expense Date</option>
+          <option value="description">Description</option>
+          <option value="amount">Amount</option>
+        </select>
+      </div>
+
+      <button
+        type="button"
+        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        @click="toggleSortDirection"
+      >
+        {{ sortDirection === 'asc' ? '↑ Ascending' : '↓ Descending' }}
+      </button>
     </div>
   </div>
 
