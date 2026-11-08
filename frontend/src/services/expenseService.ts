@@ -24,3 +24,15 @@ export const createExpense = async (
 
   return response.data
 }
+
+export const updateExpense = async (
+  id: string,
+  expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<Expense> => {
+  const response = await api.put<Expense>(`/api/expenses/${id}`, expense)
+  return response.data
+}
+
+export const deleteExpense = async (id: string): Promise<void> => {
+  await api.delete(`/api/expenses/${id}`)
+}
