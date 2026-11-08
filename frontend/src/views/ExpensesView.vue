@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { getExpenses, updateExpense, deleteExpense, type Expense } from '@/services/expenseService'
 
 type ExpenseFormData = Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>
@@ -11,6 +11,49 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const editExpenseId = ref<string | null>(null)
 const isDeletingExpenseId = ref<string | null>(null)
+
+const searchQuery = ref('')
+const selectedCategory = ref('')
+const selectedDepartment = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
+
+const categories = computed(() =>
+  [...new Set(expenses.value.map((expense) => expense.category))].sort(),
+)
+
+const departments = computed(() =>
+  [...new Set(expenses.value.map((expense) => expense.department))].sort(),
+)
+
+const filteredExpenses = computed(() => {
+  return expenses.value.filter((expense) => {
+    const search = searchQuery.value.trim().toLowerCase()
+
+    const matchesSearch = !search || expense.description.toLowerCase().includes(search)
+
+    const matchesCategory = !selectedCategory.value || expense.category === selectedCategory.value
+
+    const matchesDepartment =
+      !selectedDepartment.value || expense.department === selectedDepartment.value
+
+    const expenseDate = expense.expenseDate.slice(0, 10)
+
+    const matchesDateFrom = !dateFrom.value || expenseDate >= dateFrom.value
+
+    const matchesDateTo = !dateTo.value || expenseDate <= dateTo.value
+
+    return matchesSearch && matchesCategory && matchesDepartment && matchesDateFrom && matchesDateTo
+  })
+})
+
+const resetFilters = () => {
+  searchQuery.value = ''
+  selectedCategory.value = ''
+  selectedDepartment.value = ''
+  dateFrom.value = ''
+  dateTo.value = ''
+}
 
 const editForm = reactive<ExpenseFormData>({
   description: '',
@@ -255,7 +298,7 @@ onMounted(() => {
           </thead>
 
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-slate-50">
+            <tr v-for="expense in filteredExpenses" :key="expense.id" class="hover:bg-slate-50">
               <td class="px-6 py-4 font-medium text-slate-800">
                 {{ expense.description }}
               </td>
@@ -294,5 +337,78 @@ onMounted(() => {
         </table>
       </div>
     </div>
+
+    <!-- Expense filters -->
+    <div class="grid grid-cols-1 gap-4 border-b border-slate-200 p-6 md:grid-cols-2 lg:grid-cols-3">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> Search description </label>
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="Search expenses..."
+          class="w-full rounded-lg border border-slate-300 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> Category </label>
+        <select
+          v-model="selectedCategory"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2"
+        >
+          <option value="">All categories</option>
+          <option v-for="category in categories" :key="category" :value="category">
+            {{ category }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> Department </label>
+        <select
+          v-model="selectedDepartment"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2"
+        >
+          <option value="">All departments</option>
+          <option v-for="department in departments" :key="department" :value="department">
+            {{ department }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> From date </label>
+        <input
+          v-model="dateFrom"
+          type="date"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700"> To date </label>
+        <input
+          v-model="dateTo"
+          type="date"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2"
+        />
+      </div>
+
+      <div class="flex items-end">
+        <button
+          type="button"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          @click="resetFilters"
+        >
+          Reset filters
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {{ filteredExpenses.length }} matching expense(s)
+
+  <div v-if="filteredExpenses.length === 0" class="p-8 text-center text-slate-500">
+    {{ expenses.length === 0 ? 'No expenses found.' : 'No expenses match your filters.' }}
   </div>
 </template>
