@@ -8,6 +8,7 @@ import CreateExpenseForm from '@/components/expenses/CreateExpenseForm.vue'
 import { getExpenses, createExpense, type Expense } from '@/services/expenseService'
 
 import type { CreateExpenseInput } from '@/components/expenses/CreateExpenseForm.vue'
+import CategoryExpensesChart from '@/components/dashboard/CategoryExpensesChart.vue'
 
 // Temporary monthly budget.
 // We will make this configurable later.
@@ -102,6 +103,36 @@ const monthlyExpenses = computed(() => {
   })
 
   return months
+})
+
+const categoryExpenses = computed(() => {
+  const totals = new Map<string, number>()
+
+  expenses.value.forEach((expense) => {
+    const category = expense.category || 'Uncategorized'
+
+    totals.set(category, (totals.get(category) ?? 0) + expense.amount)
+  })
+
+  return Array.from(totals, ([category, amount]) => ({
+    category,
+    amount,
+  })).sort((a, b) => b.amount - a.amount)
+})
+
+const departmentExpenses = computed(() => {
+  const totals = new Map<string, number>()
+
+  expenses.value.forEach((expense) => {
+    const department = expense.department || 'Unassigned'
+
+    totals.set(department, (totals.get(department) ?? 0) + expense.amount)
+  })
+
+  return Array.from(totals, ([department, amount]) => ({
+    department,
+    amount,
+  })).sort((a, b) => b.amount - a.amount)
 })
 
 // Latest five expenses.
@@ -267,6 +298,98 @@ onMounted(() => {
         </div>
       </section>
     </div>
+
+    <!-- Category Analytics -->
+    <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-slate-800">Expenses by Category</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Distribution of recorded expenses across categories
+        </p>
+      </div>
+
+      <div v-if="isLoading" class="py-8 text-center text-slate-500">
+        Loading category analytics...
+      </div>
+
+      <div v-else-if="categoryExpenses.length === 0" class="py-8 text-center text-slate-500">
+        No category data available.
+      </div>
+
+      <div v-else class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+        <CategoryExpensesChart
+          :labels="categoryExpenses.map((item) => item.category)"
+          :amounts="categoryExpenses.map((item) => item.amount)"
+        />
+
+        <div class="space-y-4">
+          <div
+            v-for="item in categoryExpenses"
+            :key="item.category"
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <span class="text-sm font-medium text-slate-600">
+              {{ item.category }}
+            </span>
+
+            <div class="text-right">
+              <p class="text-sm font-semibold text-slate-800">
+                {{ formatAmount(item.amount) }}
+              </p>
+
+              <p class="text-xs text-slate-500">
+                {{
+                  (
+                    (item.amount /
+                      categoryExpenses.reduce((total, category) => total + category.amount, 0)) *
+                    100
+                  ).toFixed(1)
+                }}%
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Department Analytics -->
+    <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-slate-800">Expenses by Department</h2>
+        <p class="mt-1 text-sm text-slate-500">Compare operating expenses across departments</p>
+      </div>
+
+      <div v-if="isLoading" class="py-8 text-center text-slate-500">
+        Loading department analytics...
+      </div>
+
+      <div v-else-if="departmentExpenses.length === 0" class="py-8 text-center text-slate-500">
+        No department data available.
+      </div>
+
+      <div v-else>
+        <MonthlyExpensesChart
+          :labels="departmentExpenses.map((item) => item.department)"
+          :amounts="departmentExpenses.map((item) => item.amount)"
+        />
+
+        <div class="mt-6 space-y-3">
+          <div
+            v-for="item in departmentExpenses"
+            :key="item.department"
+            class="flex justify-between border-b border-slate-100 pb-3 text-sm"
+          >
+            <span class="font-medium text-slate-600">
+              {{ item.department }}
+            </span>
+
+            <span class="font-semibold text-slate-800">
+              {{ formatAmount(item.amount) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Recent expenses -->
     <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
