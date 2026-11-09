@@ -11,10 +11,15 @@ export interface Expense {
   updatedAt: string
 }
 
+const normalizeExpense = (expense: Expense): Expense => ({
+  ...expense,
+  amount: Number(expense.amount),
+})
+
 export const getExpenses = async (): Promise<Expense[]> => {
   const response = await api.get<Expense[]>('/api/expenses')
 
-  return response.data
+  return response.data.map(normalizeExpense)
 }
 
 export const createExpense = async (
@@ -22,7 +27,7 @@ export const createExpense = async (
 ): Promise<Expense> => {
   const response = await api.post<Expense>('/api/expenses', expense)
 
-  return response.data
+  return normalizeExpense(response.data)
 }
 
 export const updateExpense = async (
@@ -30,7 +35,7 @@ export const updateExpense = async (
   expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<Expense> => {
   const response = await api.put<Expense>(`/api/expenses/${id}`, expense)
-  return response.data
+  return normalizeExpense(response.data)
 }
 
 export const deleteExpense = async (id: string): Promise<void> => {

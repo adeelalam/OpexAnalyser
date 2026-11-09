@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { Wallet, TrendingUp, CircleDollarSign, ChartNoAxesCombined } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
 
 import MonthlyExpensesChart from '@/components/dashboard/MonthlyExpensesChart.vue'
 import CreateExpenseForm from '@/components/expenses/CreateExpenseForm.vue'
@@ -9,106 +9,107 @@ import { getExpenses, createExpense, type Expense } from '@/services/expenseServ
 
 import type { CreateExpenseInput } from '@/components/expenses/CreateExpenseForm.vue'
 
-const summaryCards = [
+// Temporary monthly budget.
+// We will make this configurable later.
+const monthlyBudget = 350000
+
+const expenses = ref<Expense[]>([])
+const isLoading = ref(false)
+const isCreatingExpense = ref(false)
+const showExpenseForm = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
+
+// Format amounts consistently.
+const formatAmount = (amount: number) =>
+  `SEK ${amount.toLocaleString('sv-SE', {
+    maximumFractionDigits: 0,
+  })}`
+
+// Current month in YYYY-MM format.
+const currentMonth = new Date().toISOString().slice(0, 7)
+
+// Expenses recorded during the current month.
+const currentMonthExpenses = computed(() =>
+  expenses.value.filter((expense) => expense.expenseDate.slice(0, 7) === currentMonth),
+)
+
+// Total expenses for the current month.
+const totalMonthlyExpenses = computed(() =>
+  currentMonthExpenses.value.reduce((total, expense) => total + expense.amount, 0),
+)
+
+// Remaining budget.
+const remainingBudget = computed(() => monthlyBudget - totalMonthlyExpenses.value)
+
+// Budget utilization percentage.
+const budgetUtilization = computed(() =>
+  monthlyBudget > 0 ? (totalMonthlyExpenses.value / monthlyBudget) * 100 : 0,
+)
+
+// Summary cards.
+const summaryCards = computed(() => [
   {
     title: 'Total Expenses',
-    amount: 'SEK 245,800',
+    amount: formatAmount(totalMonthlyExpenses.value),
     description: 'This month',
     icon: Wallet,
     color: 'bg-blue-100 text-blue-600',
   },
   {
     title: 'Monthly Budget',
-    amount: 'SEK 350,000',
+    amount: formatAmount(monthlyBudget),
     description: 'Allocated budget',
     icon: CircleDollarSign,
     color: 'bg-purple-100 text-purple-600',
   },
   {
     title: 'Remaining Budget',
-    amount: 'SEK 104,200',
+    amount: formatAmount(remainingBudget.value),
     description: 'Budget available',
     icon: TrendingUp,
     color: 'bg-green-100 text-green-600',
   },
   {
     title: 'Budget Utilization',
-    amount: '70.2%',
+    amount: `${budgetUtilization.value.toFixed(1)}%`,
     description: 'Of monthly budget',
     icon: ChartNoAxesCombined,
     color: 'bg-orange-100 text-orange-600',
   },
-]
+])
 
-const monthlyExpenses = [
-  { month: 'Jun', amount: 45 },
-  { month: 'Jul', amount: 65 },
-  { month: 'Aug', amount: 55 },
-  { month: 'Sep', amount: 80 },
-  { month: 'Oct', amount: 70 },
-  { month: 'Nov', amount: 95 },
-]
+// Generate the last six calendar months, including the current month.
+const monthlyExpenses = computed(() => {
+  const today = new Date()
 
-const recentExpenses = [
-  {
-    description: 'Office Supplies',
-    department: 'Administration',
-    category: 'Supplies',
-    amount: 'SEK 4,500',
-    status: 'Approved',
-  },
-  {
-    description: 'Cloud Hosting',
-    department: 'IT',
-    category: 'Infrastructure',
-    amount: 'SEK 12,000',
-    status: 'Approved',
-  },
-  {
-    description: 'Business Travel',
-    department: 'Sales',
-    category: 'Travel',
-    amount: 'SEK 8,200',
-    status: 'Pending',
-  },
-  {
-    description: 'Software Licenses',
-    department: 'IT',
-    category: 'Software',
-    amount: 'SEK 6,800',
-    status: 'Approved',
-  },
-]
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - 5 + index, 1)
 
-const expenses = ref<Expense[]>([])
-const isLoading = ref(false)
-const errorMessage = ref('')
+    return {
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+      month: date.toLocaleDateString('en-US', { month: 'short' }),
+      amount: 0,
+    }
+  })
+
+  expenses.value.forEach((expense) => {
+    const month = months.find((item) => item.key === expense.expenseDate.slice(0, 7))
+
+    if (month) {
+      month.amount += expense.amount
+    }
+  })
+
+  return months
+})
+
+// Latest five expenses.
+const recentExpenses = computed(() =>
+  [...expenses.value].sort((a, b) => b.expenseDate.localeCompare(a.expenseDate)).slice(0, 5),
+)
 
 const loadExpenses = async () => {
-  const showExpenseForm = ref(false)
-  const isCreatingExpense = ref(false)
-  const successMessage = ref('')
-
-  const handleCreateExpense = async (expense: CreateExpenseInput) => {
-    isCreatingExpense.value = true
-    errorMessage.value = ''
-    successMessage.value = ''
-
-    try {
-      await createExpense(expense)
-
-      showExpenseForm.value = false
-      successMessage.value = 'Expense created successfully!'
-
-      await loadExpenses()
-    } catch (error) {
-      console.error('Failed to create expense:', error)
-      errorMessage.value = 'Unable to create expense. Please try again.'
-    } finally {
-      isCreatingExpense.value = false
-    }
-  }
-
   isLoading.value = true
   errorMessage.value = ''
 
@@ -121,10 +122,6 @@ const loadExpenses = async () => {
     isLoading.value = false
   }
 }
-
-const showExpenseForm = ref(false)
-const isCreatingExpense = ref(false)
-const successMessage = ref('')
 
 const handleCreateExpense = async (expense: CreateExpenseInput) => {
   isCreatingExpense.value = true
@@ -235,27 +232,36 @@ onMounted(() => {
         <div class="mt-8">
           <div class="mb-3 flex justify-between text-sm">
             <span class="text-slate-500">Used budget</span>
-            <span class="font-semibold text-slate-800">70.2%</span>
+            <span class="font-semibold text-slate-800"> {{ budgetUtilization.toFixed(1) }}% </span>
           </div>
 
           <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-            <div class="h-full w-[70.2%] rounded-full bg-blue-500" />
+            <div
+              class="h-full rounded-full bg-blue-500 transition-all"
+              :style="{ width: `${Math.min(budgetUtilization, 100)}%` }"
+            />
           </div>
 
           <div class="mt-6 space-y-4 text-sm">
             <div class="flex justify-between">
               <span class="text-slate-500">Spent</span>
-              <span class="font-semibold">SEK 245,800</span>
+              <span class="font-semibold">
+                {{ formatAmount(totalMonthlyExpenses) }}
+              </span>
             </div>
 
             <div class="flex justify-between">
               <span class="text-slate-500">Remaining</span>
-              <span class="font-semibold text-green-600"> SEK 104,200 </span>
+              <span class="font-semibold text-green-600">
+                {{ formatAmount(remainingBudget) }}
+              </span>
             </div>
 
             <div class="flex justify-between border-t border-slate-100 pt-4">
               <span class="text-slate-500">Total budget</span>
-              <span class="font-semibold">SEK 350,000</span>
+              <span class="font-semibold">
+                {{ formatAmount(monthlyBudget) }}
+              </span>
             </div>
           </div>
         </div>
@@ -300,7 +306,7 @@ onMounted(() => {
 
             <tr
               v-else
-              v-for="expense in expenses.slice(0, 5)"
+              v-for="expense in recentExpenses"
               :key="expense.id"
               class="border-t border-slate-100"
             >
