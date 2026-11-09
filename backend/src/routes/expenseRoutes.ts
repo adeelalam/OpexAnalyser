@@ -9,8 +9,12 @@ import {
 } from "../controllers/expenseController.js";
 
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { authenticateToken } from "../middleware/authMiddleware.js";
 
 const router = Router();
+
+// Require authentication for all expense endpoints
+router.use(authenticateToken);
 
 router.get("/", asyncHandler(getExpenses));
 router.get("/:id", asyncHandler(getExpense));

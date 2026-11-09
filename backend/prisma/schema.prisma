@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,6 +10,17 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  expenses     Expense[]
+}
+
 model Expense {
   id          String   @id @default(uuid())
   description String
@@ -19,10 +28,16 @@ model Expense {
   category    String
   department  String
   expenseDate DateTime @db.Date
+
+  // Optional temporarily so existing expenses survive the migration.
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([expenseDate])
   @@index([category])
   @@index([department])
+  @@index([userId])
 }

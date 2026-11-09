@@ -3,6 +3,7 @@ import expenseRoutes from "./routes/expenseRoutes.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import cors from "cors";
+import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -33,6 +34,8 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/expenses", expenseRoutes);
+
+app.use("/api/auth", authRoutes);
 
 app.get("/health/database", async (_req, res) => {
   try {
