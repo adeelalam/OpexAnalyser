@@ -1,6 +1,6 @@
 # OpexAnalyser
 
-A full-stack operating expense management and analysis application built with **Node.js, TypeScript, Express, PostgreSQL, Prisma and Vue 3**.
+A full-stack operating expense management and analysis application built with **Node.js, TypeScript, Express.js, PostgreSQL, Prisma ORM and Vue 3**.
 
 OpexAnalyser aims to help organizations manage operating expenses, monitor budgets, analyze spending patterns and make better financial decisions.
 
@@ -11,7 +11,8 @@ OpexAnalyser aims to help organizations manage operating expenses, monitor budge
 - Monitor monthly and yearly budgets.
 - Compare actual expenses against allocated budgets.
 - Visualize expense trends and spending patterns.
-- Import expense data from CSV and Excel files.
+- Import and export expense data.
+- Generate financial reports.
 - Identify unusual spending and potential cost-saving opportunities.
 - Explore AI-powered financial insights.
 
@@ -19,27 +20,29 @@ OpexAnalyser aims to help organizations manage operating expenses, monitor budge
 
 ### Backend
 
-| Technology | Purpose                        |
-| ---------- | ------------------------------ |
-| Node.js    | JavaScript runtime             |
-| TypeScript | Type safety                    |
-| Express.js | REST API                       |
-| PostgreSQL | Relational database            |
-| Prisma ORM | Database access and migrations |
+| Technology           | Purpose                          |
+| -------------------- | -------------------------------- |
+| Node.js              | JavaScript runtime               |
+| TypeScript           | Type safety                      |
+| Express.js           | REST API                         |
+| PostgreSQL           | Relational database              |
+| Prisma ORM           | Database access and migrations   |
+| bcryptjs             | Password hashing                 |
+| JSON Web Token (JWT) | Authentication and authorization |
 
 ### Frontend
 
-| Technology      | Purpose                           |
-| --------------- | --------------------------------- |
-| Vue 3           | Frontend framework                |
-| TypeScript      | Type safety                       |
-| Vite            | Development server and build tool |
-| Vue Router      | Application navigation            |
-| Pinia           | State management                  |
-| Tailwind CSS    | Styling                           |
-| Lucide Vue Next | Icons                             |
-| Axios           | API communication (planned)       |
-| Chart.js        | Data visualization                |
+| Technology      | Purpose                                     |
+| --------------- | ------------------------------------------- |
+| Vue 3           | Frontend framework                          |
+| TypeScript      | Type safety                                 |
+| Vite            | Development server and build tool           |
+| Vue Router      | Application navigation and route protection |
+| Pinia           | State management                            |
+| Tailwind CSS    | Styling                                     |
+| Lucide Vue Next | Icons                                       |
+| Axios           | API communication                           |
+| Chart.js        | Data visualization                          |
 
 ## Project Structure
 
@@ -70,8 +73,8 @@ OpexAnalyser/
 │   │   ├── components/
 │   │   │   └── layout/
 │   │   ├── router/
-│   │   ├── stores/
 │   │   ├── services/
+│   │   ├── stores/
 │   │   ├── types/
 │   │   ├── views/
 │   │   ├── App.vue
@@ -101,23 +104,35 @@ cd OpexAnalyser
 
 ### 2. Configure the backend
 
+Navigate to the backend directory and install dependencies:
+
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file inside the backend directory and configure your PostgreSQL connection:
+Create a `.env` file inside the `backend` directory:
 
 ```env
 DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/opex_analyser"
+JWT_SECRET="YOUR_LONG_RANDOM_SECRET"
+JWT_EXPIRES_IN="1h"
 ```
 
-Replace the username and password with your local PostgreSQL credentials.
+Replace the database username and password with your local PostgreSQL credentials.
 
-Apply pending Prisma migrations:
+Use a strong, randomly generated JWT secret. Never commit your `.env` file or expose its secrets.
+
+Apply database migrations:
 
 ```bash
 npx prisma migrate dev
+```
+
+Generate the Prisma client if required:
+
+```bash
+npx prisma generate
 ```
 
 Start the backend development server:
@@ -126,23 +141,34 @@ Start the backend development server:
 npm run dev
 ```
 
-The API runs at:
+The backend API runs at:
 
-`http://localhost:3000`
+http://localhost:3000
 
 ### 3. Configure the frontend
 
-Open another terminal:
+Open another terminal and navigate to the frontend directory:
 
 ```bash
 cd frontend
 npm install
+```
+
+Create a `.env` file inside the `frontend` directory:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+Start the frontend development server:
+
+```bash
 npm run dev
 ```
 
 The frontend runs at:
 
-`http://localhost:5173`
+http://localhost:5173
 
 ### 4. Build for production
 
@@ -160,19 +186,71 @@ cd frontend
 npm run build
 ```
 
-## Current API Endpoints
+## Current Features
 
-| Method | Endpoint            | Description               |
-| ------ | ------------------- | ------------------------- |
-| GET    | `/health`           | API health check          |
-| GET    | `/health/database`  | Database connection check |
-| GET    | `/api/expenses`     | Retrieve all expenses     |
-| GET    | `/api/expenses/:id` | Retrieve an expense       |
-| POST   | `/api/expenses`     | Create an expense         |
-| PUT    | `/api/expenses/:id` | Update an expense         |
-| DELETE | `/api/expenses/:id` | Delete an expense         |
+### Expense Management
+
+- Create, retrieve, update and delete expenses.
+- Organize expenses by category and department.
+- Store expense information in PostgreSQL.
+- Communicate with the backend through REST APIs.
+
+### Dashboard and Analytics
+
+- Dashboard summary cards.
+- Expense visualizations using Chart.js.
+- Monthly expense trends.
+- Expense data retrieved from the backend.
+
+### Authentication and Security
+
+- User registration and login.
+- Password hashing using bcryptjs.
+- JWT-based authentication.
+- Protected API endpoints.
+- Protected frontend routes.
+- Automatic JWT attachment to API requests using Axios interceptors.
+- Session persistence using browser local storage.
+- Logout functionality.
+- User-specific expense access and ownership isolation.
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint             | Description         | Access |
+| ------ | -------------------- | ------------------- | ------ |
+| POST   | `/api/auth/register` | Register a new user | Public |
+| POST   | `/api/auth/login`    | Authenticate a user | Public |
+
+### Expenses
+
+All expense endpoints require a valid JWT access token.
+
+Include the following HTTP header:
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+| Method | Endpoint            | Description                            |
+| ------ | ------------------- | -------------------------------------- |
+| GET    | `/api/expenses`     | Retrieve authenticated user's expenses |
+| GET    | `/api/expenses/:id` | Retrieve an expense                    |
+| POST   | `/api/expenses`     | Create an expense                      |
+| PUT    | `/api/expenses/:id` | Update an expense                      |
+| DELETE | `/api/expenses/:id` | Delete an expense                      |
+
+### Health Checks
+
+| Method | Endpoint           | Description               |
+| ------ | ------------------ | ------------------------- |
+| GET    | `/health`          | API health check          |
+| GET    | `/health/database` | Database connection check |
 
 ## Development Progress
+
+### Completed
 
 - [x] Node.js and TypeScript backend foundation
 - [x] Express.js REST API
@@ -184,17 +262,32 @@ npm run build
 - [x] Vue 3 frontend foundation
 - [x] Tailwind CSS integration
 - [x] Reusable sidebar and header components
-- [x] Initial dashboard interface
+- [x] Dashboard interface
 - [x] Application routing
 - [x] Interactive dashboard charts
-- [ ] Responsive navigation
-- [ ] Complete expense management interface
-- [ ] Frontend and backend integration
-- [ ] OPEX business logic
-- [ ] Authentication and authorization
-- [ ] CSV/Excel imports
-- [ ] Advanced reporting and analytics
-- [ ] Automated testing
+- [x] Expense management interface
+- [x] Frontend and backend integration
+- [x] Pinia state management
+- [x] User registration and login
+- [x] JWT authentication and authorization
+- [x] Protected frontend routes
+- [x] Protected backend API endpoints
+- [x] User-specific expense ownership
+- [x] Authentication session persistence
+- [x] Logout functionality
+- [x] Manual authentication and API testing
+
+### Remaining
+
+- [ ] CSV expense export
+- [ ] CSV expense import
+- [ ] Excel import and export
+- [ ] Budget management
+- [ ] Advanced financial reporting
+- [ ] Advanced analytics
+- [ ] Automated backend and frontend testing
+- [ ] Improved responsive navigation
+- [ ] Production security improvements
 - [ ] Production deployment
 
 ## Learning Objectives
@@ -204,10 +297,11 @@ This project is also a practical full-stack learning exercise, focusing on:
 - REST API design and backend architecture.
 - TypeScript and Node.js development.
 - Database design and ORM integration.
+- Authentication and application security.
 - Frontend component architecture.
 - API communication and state management.
 - Data visualization and financial analytics.
-- Testing, security and deployment.
+- Testing and production deployment.
 
 ## License
 
