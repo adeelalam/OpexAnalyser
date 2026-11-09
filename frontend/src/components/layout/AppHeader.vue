@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { Search, Bell, CalendarDays } from 'lucide-vue-next'
+import { Search, Bell, CalendarDays, LogOut } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -24,14 +34,33 @@ import { Search, Bell, CalendarDays } from 'lucide-vue-next'
         aria-label="Notifications"
       >
         <Bell :size="20" />
-
-        <span class="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
+        <span class="absolute right-2 top-2 size-2 rounded-full bg-red-500"></span>
       </button>
 
       <div class="flex items-center gap-2 border-l border-slate-200 pl-5">
         <CalendarDays :size="18" class="text-slate-500" />
+        <span class="text-sm text-slate-600">November 2026</span>
+      </div>
 
-        <span class="text-sm text-slate-600"> November 2026 </span>
+      <!-- Logged-in user -->
+      <div class="flex items-center gap-3 border-l border-slate-200 pl-5">
+        <div class="text-right">
+          <p class="text-sm font-semibold text-slate-700">
+            {{ authStore.user?.name }}
+          </p>
+          <p class="text-xs text-slate-500">
+            {{ authStore.user?.email }}
+          </p>
+        </div>
+
+        <button
+          @click="handleLogout"
+          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+          aria-label="Log out"
+        >
+          <LogOut :size="18" />
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   </header>

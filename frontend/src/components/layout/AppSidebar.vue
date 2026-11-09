@@ -8,12 +8,15 @@ import {
   ChartNoAxesCombined,
 } from 'lucide-vue-next'
 
+import { useAuthStore } from '@/stores/authStore'
+
 const navigationItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { name: 'Expenses', icon: Receipt, path: '/expenses' },
   { name: 'Categories', icon: Tags, path: '/categories' },
   { name: 'Departments', icon: Building2, path: '/departments' },
 ]
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -60,12 +63,16 @@ const navigationItems = [
 
       <div class="mt-4 flex items-center gap-3 rounded-lg bg-slate-800 p-3">
         <div class="flex size-9 items-center justify-center rounded-full bg-blue-600 font-semibold">
-          OA
+          {{ authStore.user?.name?.charAt(0).toUpperCase() }}
         </div>
 
-        <div>
-          <p class="text-sm font-medium">Administrator</p>
-          <p class="text-xs text-slate-400">OpexAnalyser</p>
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium">
+            {{ authStore.user?.name }}
+          </p>
+          <p class="truncate text-xs text-slate-400">
+            {{ authStore.user?.email }}
+          </p>
         </div>
       </div>
     </div>
