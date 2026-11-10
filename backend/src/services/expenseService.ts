@@ -56,3 +56,21 @@ export async function deleteExpense(id: string, userId: string) {
     },
   });
 }
+
+export async function exportExpenses(userId: string) {
+  return prisma.expense.findMany({
+    where: { userId },
+    orderBy: {
+      expenseDate: "desc",
+    },
+    select: {
+      id: true,
+      description: true,
+      amount: true,
+      category: true,
+      department: true,
+      expenseDate: true,
+      createdAt: true,
+    },
+  });
+}

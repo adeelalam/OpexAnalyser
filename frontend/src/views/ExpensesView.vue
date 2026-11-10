@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { getExpenses, updateExpense, deleteExpense, type Expense } from '@/services/expenseService'
+import {
+  getExpenses,
+  updateExpense,
+  deleteExpense,
+  exportExpenses,
+  type Expense,
+} from '@/services/expenseService'
 
 type ExpenseFormData = Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>
 
 const expenses = ref<Expense[]>([])
 const isLoading = ref(false)
 const isSaving = ref(false)
+const isExporting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const editExpenseId = ref<string | null>(null)
@@ -212,6 +219,22 @@ const handleDeleteExpense = async (expense: Expense) => {
   }
 }
 
+const handleExportExpenses = async () => {
+  isExporting.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await exportExpenses()
+    successMessage.value = 'Expenses exported successfully!'
+  } catch (error) {
+    console.error('Failed to export expenses:', error)
+    errorMessage.value = 'Unable to export expenses. Please try again.'
+  } finally {
+    isExporting.value = false
+  }
+}
+
 const formatAmount = (amount: number) => {
   return `${amount.toLocaleString('sv-SE')} SEK`
 }
@@ -325,9 +348,22 @@ onMounted(() => {
 
     <!-- Expenses table -->
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-200 px-6 py-4">
-        <h2 class="text-lg font-semibold text-slate-800">All Expenses</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ expenses.length }} expense(s) found</p>
+      <div
+        class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-4"
+      >
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800">All Expenses</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ expenses.length }} expense(s) found</p>
+        </div>
+
+        <button
+          type="button"
+          :disabled="isExporting || expenses.length === 0"
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="handleExportExpenses"
+        >
+          {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+        </button>
       </div>
 
       <div v-if="isLoading" class="p-8 text-center text-slate-500">Loading expenses...</div>

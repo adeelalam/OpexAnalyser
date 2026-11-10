@@ -41,3 +41,23 @@ export const updateExpense = async (
 export const deleteExpense = async (id: string): Promise<void> => {
   await api.delete(`/api/expenses/${id}`)
 }
+
+export const exportExpenses = async (): Promise<void> => {
+  const response = await api.get('/api/expenses/export', {
+    responseType: 'blob',
+  })
+
+  const url = window.URL.createObjectURL(
+    new Blob([response.data], { type: 'text/csv;charset=utf-8;' }),
+  )
+
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'opex-expenses.csv')
+
+  document.body.appendChild(link)
+  link.click()
+
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}

@@ -6,6 +6,7 @@ import {
   createExpense,
   updateExpense,
   deleteExpense,
+  exportExpenses,
 } from "../services/expenseService.js";
 
 import type { CreateExpenseInput } from "../types/expense.js";
@@ -129,4 +130,50 @@ export async function removeExpense(req: Request, res: Response) {
   res.status(200).json({
     message: "Expense deleted successfully",
   });
+}
+
+// GET /api/expenses/export
+export async function exportExpensesController(_req: Request, res: Response) {
+  const userId = res.locals.userId as string;
+  const expenses = await exportExpenses(userId);
+
+  function escapeCsvValue(value: string | number | null | undefined): string {
+    const text = String(value ?? "");
+
+    if (/[",\r\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    return text;
+  }
+
+  const headers = [
+    "ID",
+    "Description",
+    "Amount",
+    "Category",
+    "Department",
+    "Expense Date",
+    "Created At",
+  ];
+
+  const rows = expenses.map((expense) => [
+    expense.id,
+    expense.description,
+    expense.amount.toString(),
+    expense.category,
+    expense.department,
+    expense.expenseDate.toISOString().slice(0, 10),
+    expense.createdAt.toISOString(),
+  ]);
+
+  const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\r\n");
+
+  // UTF-8 BOM improves compatibility with Microsoft Excel
+  const csvWithBom = "\uFEFF" + csv;
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="opex-expenses.csv"');
+
+  res.status(200).send(csvWithBom);
 }

@@ -6,6 +6,7 @@ import {
   addExpense,
   editExpense,
   removeExpense,
+  exportExpensesController,
 } from "../controllers/expenseController.js";
 
 import { asyncHandler } from "../middleware/asyncHandler.js";
@@ -17,6 +18,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.get("/", asyncHandler(getExpenses));
+router.get("/export", asyncHandler(exportExpensesController));
 router.get("/:id", asyncHandler(getExpense));
 router.post("/", asyncHandler(addExpense));
 router.put("/:id", asyncHandler(editExpense));
