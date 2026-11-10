@@ -224,3 +224,48 @@ test('authenticated user can delete an expense', async ({ page }) => {
   // Verify that the expense disappears
   await expect(expenseRow).toBeHidden()
 })
+
+test('authenticated user can search expenses by description', async ({ page }) => {
+  const email = `playwright-search-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const description = `Searchable Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Search User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(description)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  // Search for the expense
+  await page.getByPlaceholder('Search expenses...').fill(description)
+
+  // Verify the matching expense appears
+  await expect(page.getByRole('cell', { name: description })).toBeVisible()
+
+  // Search for a description that does not exist
+  await page.getByPlaceholder('Search expenses...').fill('Nonexistent Expense XYZ')
+
+  // Verify no matching results
+  await expect(page.getByText('No expenses match your filters.')).toBeVisible()
+})
