@@ -269,3 +269,69 @@ test('authenticated user can search expenses by description', async ({ page }) =
   // Verify no matching results
   await expect(page.getByText('No expenses match your filters.')).toBeVisible()
 })
+
+test('authenticated user can filter expenses by category', async ({ page }) => {
+  const email = `playwright-category-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const travelDescription = `Travel Expense ${Date.now()}`
+  const officeDescription = `Office Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Category User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create the first expense: Travel
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(travelDescription)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Create the second expense: Office
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(officeDescription)
+  await page.getByPlaceholder('4500').fill('1800')
+  await page.getByPlaceholder('e.g. Travel').fill('Office')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  const travelRow = page.getByRole('row').filter({
+    hasText: travelDescription,
+  })
+
+  const officeRow = page.getByRole('row').filter({
+    hasText: officeDescription,
+  })
+
+  await expect(travelRow).toBeVisible()
+  await expect(officeRow).toBeVisible()
+
+  // Apply the Travel category filter
+  // Select 0 is pagination; select 1 is Category.
+  await page.locator('select').nth(1).selectOption('Travel')
+
+  // Verify only Travel expenses are displayed
+  await expect(travelRow).toBeVisible()
+  await expect(officeRow).toBeHidden()
+})
