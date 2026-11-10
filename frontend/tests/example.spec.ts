@@ -118,3 +118,61 @@ test('authenticated user can create an expense', async ({ page }) => {
   // Verify the new expense appears
   await expect(page.getByRole('cell', { name: description })).toBeVisible()
 })
+
+test('authenticated user can edit an expense', async ({ page }) => {
+  const email = `playwright-edit-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const description = `Original Expense ${Date.now()}`
+  const updatedDescription = `Updated Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Edit User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(description)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Open the Expenses page
+  await page.goto('/expenses')
+
+  const expenseRow = page.getByRole('row').filter({
+    hasText: description,
+  })
+
+  await expect(expenseRow).toBeVisible()
+
+  // Edit the expense
+  await expenseRow.getByRole('button', { name: /edit/i }).click()
+
+  await page.locator('input[type="text"]').last().fill(updatedDescription)
+  await page.locator('input[type="number"]').fill('3500')
+
+  await page.getByRole('button', { name: 'Save Changes' }).click()
+
+  // Verify the update
+  await expect(page.getByText('Expense updated successfully!')).toBeVisible()
+
+  const updatedRow = page.getByRole('row').filter({
+    hasText: updatedDescription,
+  })
+
+  await expect(updatedRow).toBeVisible()
+  await expect(updatedRow).toContainText('3')
+})
