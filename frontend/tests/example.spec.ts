@@ -23,3 +23,35 @@ test('user can register a new account', async ({ page }) => {
 
   await expect(page.getByRole('banner').getByText('Playwright Test User')).toBeVisible()
 })
+
+test('user can log in with valid credentials', async ({ page }) => {
+  const email = `playwright-login-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+
+  // First, register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Login User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Log out
+  await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // Then, log in with the same credentials
+  await page.goto('/login')
+
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Enter your password').fill(password)
+
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  await expect(page.getByRole('banner').getByText('Playwright Login User')).toBeVisible()
+})
