@@ -79,3 +79,42 @@ test('authenticated user can view the expenses page', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'All Expenses' })).toBeVisible()
 })
+
+test('authenticated user can create an expense', async ({ page }) => {
+  const email = `playwright-create-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const description = `Playwright Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Expense User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Open the create expense form
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  // Fill in the expense details
+  await page.getByPlaceholder('e.g. Office supplies').fill(description)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  // Submit the expense
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  // Verify successful creation
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to the expenses list
+  await page.goto('/expenses')
+
+  // Verify the new expense appears
+  await expect(page.getByRole('cell', { name: description })).toBeVisible()
+})
