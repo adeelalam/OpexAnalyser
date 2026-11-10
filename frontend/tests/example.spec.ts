@@ -335,3 +335,69 @@ test('authenticated user can filter expenses by category', async ({ page }) => {
   await expect(travelRow).toBeVisible()
   await expect(officeRow).toBeHidden()
 })
+
+test('authenticated user can filter expenses by department', async ({ page }) => {
+  const email = `playwright-department-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const itDescription = `IT Expense ${Date.now()}`
+  const hrDescription = `HR Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Department User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create the first expense: IT department
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(itDescription)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Create the second expense: HR department
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(hrDescription)
+  await page.getByPlaceholder('4500').fill('1800')
+  await page.getByPlaceholder('e.g. Travel').fill('Office')
+  await page.getByPlaceholder('e.g. IT').fill('HR')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  const itRow = page.getByRole('row').filter({
+    hasText: itDescription,
+  })
+
+  const hrRow = page.getByRole('row').filter({
+    hasText: hrDescription,
+  })
+
+  await expect(itRow).toBeVisible()
+  await expect(hrRow).toBeVisible()
+
+  // Apply the HR department filter
+  // Select 0 is pagination; select 1 is Category; select 2 is Department.
+  await page.locator('select').nth(2).selectOption('HR')
+
+  // Verify only HR expenses are displayed
+  await expect(hrRow).toBeVisible()
+  await expect(itRow).toBeHidden()
+})
