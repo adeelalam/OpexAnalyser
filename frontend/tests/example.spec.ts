@@ -176,3 +176,51 @@ test('authenticated user can edit an expense', async ({ page }) => {
   await expect(updatedRow).toBeVisible()
   await expect(updatedRow).toContainText('3')
 })
+
+test('authenticated user can delete an expense', async ({ page }) => {
+  const email = `playwright-delete-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const description = `Playwright Delete Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Delete User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(description)
+  await page.getByPlaceholder('4500').fill('1500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to the expenses list
+  await page.goto('/expenses')
+
+  const expenseRow = page.getByRole('row').filter({
+    hasText: description,
+  })
+
+  await expect(expenseRow).toBeVisible()
+
+  // Accept the browser confirmation dialog
+  page.once('dialog', (dialog) => dialog.accept())
+
+  // Delete the expense
+  await expenseRow.getByRole('button', { name: /delete/i }).click()
+
+  // Verify that the expense disappears
+  await expect(expenseRow).toBeHidden()
+})
