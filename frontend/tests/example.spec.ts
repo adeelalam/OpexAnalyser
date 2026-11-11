@@ -468,68 +468,85 @@ test('authenticated user can filter expenses by date range', async ({ page }) =>
   await expect(olderRow).toBeHidden()
 })
 
-// test('authenticated user can filter expenses by date range', async ({ page }) => {
-//   const email = `playwright-date-${Date.now()}@example.com`
-//   const password = 'TestPassword123!'
-//   const recentDescription = `Recent Expense ${Date.now()}`
-//   const olderDescription = `Older Expense ${Date.now()}`
+test('authenticated user can reset expense filters', async ({ page }) => {
+  const email = `playwright-reset-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const targetDescription = `Reset Filter Target ${Date.now()}`
+  const otherDescription = `Other Expense ${Date.now()}`
 
-//   // Register a test account
-//   await page.goto('/register')
+  // Register a test account
+  await page.goto('/register')
 
-//   await page.getByPlaceholder('Your name').fill('Playwright Date User')
-//   await page.getByPlaceholder('you@example.com').fill(email)
-//   await page.getByPlaceholder('Minimum 8 characters').fill(password)
+  await page.getByPlaceholder('Your name').fill('Playwright Reset User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
 
-//   await page.getByRole('button', { name: 'Create account' }).click()
+  await page.getByRole('button', { name: 'Create account' }).click()
 
-//   await expect(page).toHaveURL('http://localhost:5173/')
+  await expect(page).toHaveURL('http://localhost:5173/')
 
-//   // Create an older expense
-//   await page.getByRole('button', { name: /Add Expense/ }).click()
+  // Create the first expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
 
-//   await page.getByPlaceholder('e.g. Office supplies').fill(olderDescription)
-//   await page.getByPlaceholder('4500').fill('1500')
-//   await page.getByPlaceholder('e.g. Travel').fill('Travel')
-//   await page.getByPlaceholder('e.g. IT').fill('IT')
-//   await page.locator('input[type="date"]').fill('2026-11-08')
+  await page.getByPlaceholder('e.g. Office supplies').fill(targetDescription)
+  await page.getByPlaceholder('4500').fill('1500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
 
-//   await page.getByRole('button', { name: 'Save Expense' }).click()
+  await page.getByRole('button', { name: 'Save Expense' }).click()
 
-//   await expect(page.getByText('Expense created successfully!')).toBeVisible()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
 
-//   // Create a more recent expense
-//   await page.getByRole('button', { name: /Add Expense/ }).click()
+  // Create the second expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
 
-//   await page.getByPlaceholder('e.g. Office supplies').fill(recentDescription)
-//   await page.getByPlaceholder('4500').fill('2500')
-//   await page.getByPlaceholder('e.g. Travel').fill('Office')
-//   await page.getByPlaceholder('e.g. IT').fill('IT')
-//   await page.locator('input[type="date"]').fill('2026-11-10')
+  await page.getByPlaceholder('e.g. Office supplies').fill(otherDescription)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Office')
+  await page.getByPlaceholder('e.g. IT').fill('HR')
+  await page.locator('input[type="date"]').fill('2026-11-08')
 
-//   await page.getByRole('button', { name: 'Save Expense' }).click()
+  await page.getByRole('button', { name: 'Save Expense' }).click()
 
-//   await expect(page.getByText('Expense created successfully!')).toBeVisible()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
 
-//   // Navigate to expenses
-//   await page.goto('/expenses')
+  // Navigate to expenses
+  await page.goto('/expenses')
 
-//   const olderRow = page.getByRole('row').filter({
-//     hasText: olderDescription,
-//   })
+  const targetRow = page.getByRole('row').filter({
+    hasText: targetDescription,
+  })
 
-//   const recentRow = page.getByRole('row').filter({
-//     hasText: recentDescription,
-//   })
+  const otherRow = page.getByRole('row').filter({
+    hasText: otherDescription,
+  })
 
-//   await expect(olderRow).toBeVisible()
-//   await expect(recentRow).toBeVisible()
+  await expect(targetRow).toBeVisible()
+  await expect(otherRow).toBeVisible()
 
-//   // Apply the From date filter
-//   // The first date input is From date; the second is To date.
-//   await page.locator('input[type="date"]').nth(0).fill('2026-11-09')
+  // Apply multiple filters
+  await page.getByPlaceholder('Search expenses...').fill(targetDescription)
+  await page.locator('select').nth(1).selectOption('Travel')
+  await page.locator('select').nth(2).selectOption('IT')
+  await page.locator('input[type="date"]').nth(0).fill('2026-11-09')
+  await page.locator('input[type="date"]').nth(1).fill('2026-11-11')
 
-//   // Verify only expenses from November 9 onward appear
-//   await expect(recentRow).toBeVisible()
-//   await expect(olderRow).toBeHidden()
-// })
+  // Only the matching expense should remain
+  await expect(targetRow).toBeVisible()
+  await expect(otherRow).toBeHidden()
+
+  // Reset all filters
+  await page.getByRole('button', { name: 'Reset filters' }).click()
+
+  // Both expenses should be visible again
+  await expect(targetRow).toBeVisible()
+  await expect(otherRow).toBeVisible()
+
+  // Verify filter controls are cleared
+  await expect(page.getByPlaceholder('Search expenses...')).toHaveValue('')
+  await expect(page.locator('select').nth(1)).toHaveValue('')
+  await expect(page.locator('select').nth(2)).toHaveValue('')
+  await expect(page.locator('input[type="date"]').nth(0)).toHaveValue('')
+  await expect(page.locator('input[type="date"]').nth(1)).toHaveValue('')
+})
