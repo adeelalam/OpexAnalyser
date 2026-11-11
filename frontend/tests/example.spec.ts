@@ -741,7 +741,8 @@ test('authenticated user can navigate expense pages', async ({ page }) => {
   await page.goto('/expenses')
 
   // Select 10 expenses per page
-  await page.locator('select').nth(0).selectOption('10')
+  // Select 10 expenses per page
+  await page.locator('select:has(option[value="10"])').selectOption('10')
 
   // Verify first page
   await expect(page.getByText('Showing 1–10 of 12 expenses')).toBeVisible()
@@ -789,4 +790,62 @@ test('authenticated user can navigate expense pages', async ({ page }) => {
       has: page.getByRole('cell', { name: descriptions[0], exact: true }),
     }),
   ).toBeVisible()
+})
+
+test('authenticated user can export expenses to CSV', async ({ page }) => {
+  const email = `playwright-export-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const description = `CSV Export Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Export User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(description)
+  await page.getByPlaceholder('4500').fill('2500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  // Listen for the CSV download
+  const downloadPromise = page.waitForEvent('download')
+
+  await page.getByRole('button', { name: 'Export CSV' }).click()
+
+  const download = await downloadPromise
+
+  // Verify downloaded filename
+  expect(download.suggestedFilename()).toBe('opex-expenses.csv')
+
+  // Verify success message
+  await expect(page.getByText('Expenses exported successfully!')).toBeVisible()
+
+  // Read and verify CSV contents
+  const filePath = await download.path()
+
+  expect(filePath).not.toBeNull()
+
+  const fs = await import('node:fs/promises')
+  const csvContent = await fs.readFile(filePath!, 'utf-8')
+
+  expect(csvContent).toContain(description)
+  expect(csvContent).toContain('2500')
+  expect(csvContent).toContain('Travel')
 })
