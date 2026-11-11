@@ -849,3 +849,82 @@ test('authenticated user can export expenses to CSV', async ({ page }) => {
   expect(csvContent).toContain('2500')
   expect(csvContent).toContain('Travel')
 })
+
+test('users can only see their own expenses', async ({ page }) => {
+  const password = 'TestPassword123!'
+  const userAEmail = `playwright-user-a-${Date.now()}@example.com`
+  const userBEmail = `playwright-user-b-${Date.now()}@example.com`
+
+  const userAExpense = `User A Expense ${Date.now()}`
+  const userBExpense = `User B Expense ${Date.now()}`
+
+  // Register User A
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright User A')
+  await page.getByPlaceholder('you@example.com').fill(userAEmail)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense for User A
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(userAExpense)
+  await page.getByPlaceholder('4500').fill('100')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Log out User A
+  await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // Register User B
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright User B')
+  await page.getByPlaceholder('you@example.com').fill(userBEmail)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create an expense for User B
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(userBExpense)
+  await page.getByPlaceholder('4500').fill('200')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Verify User B cannot see User A's expense
+  await page.goto('/expenses')
+
+  await expect(page.getByText(userBExpense)).toBeVisible()
+  await expect(page.getByText(userAExpense)).toHaveCount(0)
+
+  // Log out User B and log in as User A
+  await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  await page.getByPlaceholder('you@example.com').fill(userAEmail)
+  await page.getByPlaceholder('Enter your password').fill(password)
+
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Verify User A cannot see User B's expense
+  await page.goto('/expenses')
+
+  await expect(page.getByText(userAExpense)).toBeVisible()
+  await expect(page.getByText(userBExpense)).toHaveCount(0)
+})
