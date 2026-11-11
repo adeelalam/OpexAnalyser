@@ -928,3 +928,36 @@ test('users can only see their own expenses', async ({ page }) => {
   await expect(page.getByText(userAExpense)).toBeVisible()
   await expect(page.getByText(userBExpense)).toHaveCount(0)
 })
+
+test('user cannot log in with an incorrect password', async ({ page }) => {
+  const email = `playwright-invalid-login-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Invalid Login User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Log out
+  await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // Attempt login with an incorrect password
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Enter your password').fill('WrongPassword123!')
+
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  // Verify login is rejected
+  await expect(page).toHaveURL(/\/login$/)
+  const errorMessage = page.locator('.bg-red-50')
+
+  await expect(errorMessage).toBeVisible()
+  await expect(errorMessage).toHaveText(/\S+/)
+})
