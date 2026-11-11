@@ -626,3 +626,79 @@ test('authenticated user can sort expenses by amount', async ({ page }) => {
     rows.findIndex((row) => row.includes(highDescription)),
   )
 })
+
+test('authenticated user can sort expenses by description', async ({ page }) => {
+  const email = `playwright-sort-description-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const alphaDescription = `Alpha Expense ${Date.now()}`
+  const betaDescription = `Beta Expense ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Description User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create Alpha expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(alphaDescription)
+  await page.getByPlaceholder('4500').fill('500')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Create Beta expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(betaDescription)
+  await page.getByPlaceholder('4500').fill('700')
+  await page.getByPlaceholder('e.g. Travel').fill('Office')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  const alphaRow = page.getByRole('row').filter({
+    hasText: alphaDescription,
+  })
+
+  const betaRow = page.getByRole('row').filter({
+    hasText: betaDescription,
+  })
+
+  await expect(alphaRow).toBeVisible()
+  await expect(betaRow).toBeVisible()
+
+  // Select description sorting (default direction: descending)
+  await page.locator('select').nth(3).selectOption('description')
+
+  let rows = await page.getByRole('row').allTextContents()
+
+  // Verify descending alphabetical order: Beta before Alpha
+  expect(rows.findIndex((row) => row.includes(betaDescription))).toBeLessThan(
+    rows.findIndex((row) => row.includes(alphaDescription)),
+  )
+
+  // Toggle to ascending order
+  await page.getByRole('button', { name: /Descending/ }).click()
+
+  rows = await page.getByRole('row').allTextContents()
+
+  // Verify ascending alphabetical order: Alpha before Beta
+  expect(rows.findIndex((row) => row.includes(alphaDescription))).toBeLessThan(
+    rows.findIndex((row) => row.includes(betaDescription)),
+  )
+})
