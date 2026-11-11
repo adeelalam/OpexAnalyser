@@ -550,3 +550,79 @@ test('authenticated user can reset expense filters', async ({ page }) => {
   await expect(page.locator('input[type="date"]').nth(0)).toHaveValue('')
   await expect(page.locator('input[type="date"]').nth(1)).toHaveValue('')
 })
+
+test('authenticated user can sort expenses by amount', async ({ page }) => {
+  const email = `playwright-sort-amount-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const lowDescription = `Low Amount ${Date.now()}`
+  const highDescription = `High Amount ${Date.now()}`
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Sort User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create a low-value expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(lowDescription)
+  await page.getByPlaceholder('4500').fill('100')
+  await page.getByPlaceholder('e.g. Travel').fill('Travel')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Create a high-value expense
+  await page.getByRole('button', { name: /Add Expense/ }).click()
+
+  await page.getByPlaceholder('e.g. Office supplies').fill(highDescription)
+  await page.getByPlaceholder('4500').fill('900')
+  await page.getByPlaceholder('e.g. Travel').fill('Office')
+  await page.getByPlaceholder('e.g. IT').fill('IT')
+  await page.locator('input[type="date"]').fill('2026-11-10')
+
+  await page.getByRole('button', { name: 'Save Expense' }).click()
+  await expect(page.getByText('Expense created successfully!')).toBeVisible()
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  const lowRow = page.getByRole('row').filter({
+    hasText: lowDescription,
+  })
+
+  const highRow = page.getByRole('row').filter({
+    hasText: highDescription,
+  })
+
+  await expect(lowRow).toBeVisible()
+  await expect(highRow).toBeVisible()
+
+  // Select amount sorting (default direction: descending)
+  await page.locator('select').nth(3).selectOption('amount')
+
+  let rows = await page.getByRole('row').allTextContents()
+
+  // Verify descending order: high amount first
+  expect(rows.findIndex((row) => row.includes(highDescription))).toBeLessThan(
+    rows.findIndex((row) => row.includes(lowDescription)),
+  )
+
+  // Toggle to ascending order
+  await page.getByRole('button', { name: /Descending/ }).click()
+
+  rows = await page.getByRole('row').allTextContents()
+
+  // Verify ascending order: low amount first
+  expect(rows.findIndex((row) => row.includes(lowDescription))).toBeLessThan(
+    rows.findIndex((row) => row.includes(highDescription)),
+  )
+})
