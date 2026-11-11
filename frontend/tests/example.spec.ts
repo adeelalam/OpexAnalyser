@@ -702,3 +702,91 @@ test('authenticated user can sort expenses by description', async ({ page }) => 
     rows.findIndex((row) => row.includes(betaDescription)),
   )
 })
+
+test('authenticated user can navigate expense pages', async ({ page }) => {
+  const email = `playwright-pagination-${Date.now()}@example.com`
+  const password = 'TestPassword123!'
+  const descriptions = Array.from(
+    { length: 12 },
+    (_, index) => `Pagination Expense ${Date.now()} ${index + 1}`,
+  )
+
+  // Register a test account
+  await page.goto('/register')
+
+  await page.getByPlaceholder('Your name').fill('Playwright Pagination User')
+  await page.getByPlaceholder('you@example.com').fill(email)
+  await page.getByPlaceholder('Minimum 8 characters').fill(password)
+
+  await page.getByRole('button', { name: 'Create account' }).click()
+
+  await expect(page).toHaveURL('http://localhost:5173/')
+
+  // Create 12 expenses
+  for (const description of descriptions) {
+    await page.getByRole('button', { name: /Add Expense/ }).click()
+
+    await page.getByPlaceholder('e.g. Office supplies').fill(description)
+    await page.getByPlaceholder('4500').fill('100')
+    await page.getByPlaceholder('e.g. Travel').fill('Travel')
+    await page.getByPlaceholder('e.g. IT').fill('IT')
+    await page.locator('input[type="date"]').fill('2026-11-10')
+
+    await page.getByRole('button', { name: 'Save Expense' }).click()
+
+    await expect(page.getByText('Expense created successfully!')).toBeVisible()
+  }
+
+  // Navigate to expenses
+  await page.goto('/expenses')
+
+  // Select 10 expenses per page
+  await page.locator('select').nth(0).selectOption('10')
+
+  // Verify first page
+  await expect(page.getByText('Showing 1–10 of 12 expenses')).toBeVisible()
+  await expect(page.getByText('Page 1 of 2')).toBeVisible()
+
+  for (const description of descriptions.slice(0, 10)) {
+    await expect(
+      page.getByRole('row').filter({
+        has: page.getByRole('cell', { name: description, exact: true }),
+      }),
+    ).toBeVisible()
+  }
+
+  await expect(
+    page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: descriptions[10], exact: true }),
+    }),
+  ).toBeHidden()
+
+  // Navigate to second page
+  await page.getByRole('button', { name: 'Next' }).click()
+
+  await expect(page.getByText('Showing 11–12 of 12 expenses')).toBeVisible()
+  await expect(page.getByText('Page 2 of 2')).toBeVisible()
+
+  // Verify remaining expenses
+  await expect(
+    page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: descriptions[10], exact: true }),
+    }),
+  ).toBeVisible()
+
+  await expect(
+    page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: descriptions[11], exact: true }),
+    }),
+  ).toBeVisible()
+
+  // Navigate back to first page
+  await page.getByRole('button', { name: 'Previous' }).click()
+
+  await expect(page.getByText('Page 1 of 2')).toBeVisible()
+  await expect(
+    page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: descriptions[0], exact: true }),
+    }),
+  ).toBeVisible()
+})
