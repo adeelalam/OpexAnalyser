@@ -32,6 +32,20 @@ describe("Expense API Integration Tests", () => {
       });
     });
 
+    it("should reject a token without a valid user ID", async () => {
+      const token = jwt.sign("invalid-payload", process.env.JWT_SECRET!);
+      const response = await request(app)
+        .get("/api/expenses")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(401);
+
+      expect(response.body).toEqual({
+        message: "Invalid authentication token",
+      });
+
+      expect(prisma.expense.findMany).not.toHaveBeenCalled();
+    });
+
     it("should accept a valid authentication token", async () => {
       const token = jwt.sign({ userId: "user-123" }, process.env.JWT_SECRET!, { expiresIn: "1h" });
 
@@ -43,6 +57,27 @@ describe("Expense API Integration Tests", () => {
         .expect(200);
 
       expect(response.body).toEqual([]);
+    });
+
+    it("should return 500 when JWT_SECRET is not configured", async () => {
+      const token = jwt.sign({ userId: "user-123" }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+
+      const originalSecret = process.env.JWT_SECRET;
+      delete process.env.JWT_SECRET;
+
+      try {
+        const response = await request(app)
+          .get("/api/expenses")
+          .set("Authorization", `Bearer ${token}`)
+          .expect(500);
+
+        expect(response.body).toEqual({
+          success: false,
+          message: "Internal server error",
+        });
+      } finally {
+        process.env.JWT_SECRET = originalSecret;
+      }
     });
 
     describe("GET /api/expenses", () => {
@@ -206,6 +241,54 @@ describe("Expense API Integration Tests", () => {
 
         expect(prisma.expense.create).not.toHaveBeenCalled();
       });
+
+      it("should reject an expense with a non-numeric amount", async () => {
+        const token = jwt.sign({ userId: "user-123" }, process.env.JWT_SECRET!, {
+          expiresIn: "1h",
+        });
+
+        const response = await request(app)
+          .post("/api/expenses")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            description: "Office supplies",
+            amount: "500",
+            category: "Office",
+            department: "IT",
+            expenseDate: "2026-11-12",
+          })
+          .expect(400);
+
+        expect(response.body).toEqual({
+          message: "Invalid expense data",
+        });
+
+        expect(prisma.expense.create).not.toHaveBeenCalled();
+      });
+
+      it("should reject an expense with an invalid date", async () => {
+        const token = jwt.sign({ userId: "user-123" }, process.env.JWT_SECRET!, {
+          expiresIn: "1h",
+        });
+
+        const response = await request(app)
+          .post("/api/expenses")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            description: "Office supplies",
+            amount: 500,
+            category: "Office",
+            department: "IT",
+            expenseDate: "not-a-valid-date",
+          })
+          .expect(400);
+
+        expect(response.body).toEqual({
+          message: "Invalid expense data",
+        });
+
+        expect(prisma.expense.create).not.toHaveBeenCalled();
+      });
     });
 
     describe("PUT /api/expenses/:id", () => {
@@ -254,6 +337,58 @@ describe("Expense API Integration Tests", () => {
             expenseDate: new Date("2026-11-12"),
           },
         });
+      });
+
+      it("should return 404 when updating a non-existent expense", async () => {
+        const userId = "user-123";
+        const expenseId = "unknown-expense";
+
+        const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+
+        vi.mocked(prisma.expense.findFirst).mockResolvedValue(null);
+
+        const response = await request(app)
+          .put(`/api/expenses/${expenseId}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            description: "Updated office supplies",
+            amount: 750,
+            category: "Office",
+            department: "IT",
+            expenseDate: "2026-11-12",
+          })
+          .expect(404);
+
+        expect(response.body).toEqual({
+          message: "Expense not found",
+        });
+
+        expect(prisma.expense.update).not.toHaveBeenCalled();
+      });
+
+      it("should reject an update with invalid expense data", async () => {
+        const token = jwt.sign({ userId: "user-123" }, process.env.JWT_SECRET!, {
+          expiresIn: "1h",
+        });
+
+        const response = await request(app)
+          .put("/api/expenses/expense-123")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            description: "Office supplies",
+            amount: 0,
+            category: "Office",
+            department: "IT",
+            expenseDate: "2026-11-12",
+          })
+          .expect(400);
+
+        expect(response.body).toEqual({
+          message: "Invalid expense data",
+        });
+
+        expect(prisma.expense.findFirst).not.toHaveBeenCalled();
+        expect(prisma.expense.update).not.toHaveBeenCalled();
       });
     });
 
@@ -304,6 +439,26 @@ describe("Expense API Integration Tests", () => {
           },
         });
       });
+
+      it("should return 404 when deleting a non-existent expense", async () => {
+        const userId = "user-123";
+        const expenseId = "unknown-expense";
+
+        const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+
+        vi.mocked(prisma.expense.findFirst).mockResolvedValue(null);
+
+        const response = await request(app)
+          .delete(`/api/expenses/${expenseId}`)
+          .set("Authorization", `Bearer ${token}`)
+          .expect(404);
+
+        expect(response.body).toEqual({
+          message: "Expense not found",
+        });
+
+        expect(prisma.expense.deleteMany).not.toHaveBeenCalled();
+      });
     });
 
     describe("GET /api/expenses/export", () => {
@@ -353,6 +508,58 @@ describe("Expense API Integration Tests", () => {
             createdAt: true,
           },
         });
+      });
+
+      it("should escape commas and quotation marks in CSV values", async () => {
+        const userId = "user-123";
+
+        const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+
+        vi.mocked(prisma.expense.findMany).mockResolvedValue([
+          {
+            id: "expense-789",
+            description: 'Office supplies, "urgent"',
+            amount: 500,
+            category: "Office",
+            department: "IT",
+            expenseDate: new Date("2026-11-12T00:00:00.000Z"),
+            createdAt: new Date("2026-11-12T10:00:00.000Z"),
+            userId,
+          },
+        ] as never);
+
+        const response = await request(app)
+          .get("/api/expenses/export")
+          .set("Authorization", `Bearer ${token}`)
+          .expect(200);
+
+        expect(response.text).toContain('"Office supplies, ""urgent"""');
+      });
+
+      it("should escape line breaks in CSV values", async () => {
+        const userId = "user-123";
+
+        const token = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+
+        vi.mocked(prisma.expense.findMany).mockResolvedValue([
+          {
+            id: "expense-790",
+            description: "Office supplies\nUrgent purchase",
+            amount: 500,
+            category: "Office",
+            department: "IT",
+            expenseDate: new Date("2026-11-12T00:00:00.000Z"),
+            createdAt: new Date("2026-11-12T10:00:00.000Z"),
+            userId,
+          },
+        ] as never);
+
+        const response = await request(app)
+          .get("/api/expenses/export")
+          .set("Authorization", `Bearer ${token}`)
+          .expect(200);
+
+        expect(response.text).toContain('"Office supplies\nUrgent purchase"');
       });
     });
   });
