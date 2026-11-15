@@ -1,7 +1,8 @@
 import app from "./app.js";
+import { logger } from "./utils/logger.js";
 
 const PORT = 3000;
 
 app.listen(PORT, () => {
-  console.log(`OpexAnalyser API running at http://localhost:${PORT}`);
+  logger.info({ port: PORT }, "OpexAnalyser API server started");
 });

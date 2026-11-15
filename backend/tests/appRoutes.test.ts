@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { errorHandler } from "../src/middleware/errorHandler.js";
+import { logger } from "../src/utils/logger.js";
 
 vi.mock("../src/db/prisma.js", () => ({
   prisma: {
@@ -16,6 +17,12 @@ vi.mock("../src/db/prisma.js", () => ({
       update: vi.fn(),
       deleteMany: vi.fn(),
     },
+  },
+}));
+
+vi.mock("../src/utils/logger.js", () => ({
+  logger: {
+    error: vi.fn(),
   },
 }));
 
@@ -59,7 +66,7 @@ describe("Application Routes Integration Tests", () => {
     it("should return an error when the database is unavailable", async () => {
       vi.mocked(prisma.$queryRaw).mockRejectedValue(new Error("Database connection failed"));
 
-      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(logger.error).mockClear();
 
       const response = await request(app).get("/health/database").expect(503);
 
@@ -68,7 +75,10 @@ describe("Application Routes Integration Tests", () => {
         message: "Could not connect to the database",
       });
 
-      consoleError.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith(
+        { err: expect.any(Error) },
+        "Database connection failed",
+      );
     });
   });
 
@@ -84,7 +94,7 @@ describe("Application Routes Integration Tests", () => {
 
   describe("Global Error Handler", () => {
     it("should return a generic 500 response for unexpected errors", async () => {
-      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(logger.error).mockClear();
 
       const req = {} as import("express").Request;
       const res = {
@@ -96,7 +106,7 @@ describe("Application Routes Integration Tests", () => {
 
       errorHandler(new Error("Unexpected database error"), req, res, next);
 
-      expect(consoleError).toHaveBeenCalledWith("API Error:", expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith({ err: expect.any(Error) }, "API Error");
 
       expect(res.status).toHaveBeenCalledWith(500);
 
@@ -106,8 +116,6 @@ describe("Application Routes Integration Tests", () => {
       });
 
       expect(next).not.toHaveBeenCalled();
-
-      consoleError.mockRestore();
     });
   });
 });

@@ -4,6 +4,7 @@ import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
+import { logger } from "./utils/logger.js";
 
 const app = express();
 
@@ -47,7 +48,7 @@ app.get("/health/database", async (_req, res) => {
       message: "Database connection successful",
     });
   } catch (error) {
-    console.error("Database connection failed:", error);
+    logger.error({ err: error }, "Database connection failed");
 
     res.status(503).json({
       status: "Unavailable",
