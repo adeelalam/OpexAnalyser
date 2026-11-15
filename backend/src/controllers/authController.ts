@@ -9,7 +9,11 @@ function generateToken(userId: string) {
     throw new Error("JWT_SECRET is not configured");
   }
 
-  return jwt.sign({ userId }, secret, { expiresIn: "1h" });
+  const expiresIn = process.env.JWT_EXPIRES_IN || "1h";
+
+  return jwt.sign({ userId }, secret, {
+    expiresIn: expiresIn as jwt.SignOptions["expiresIn"],
+  });
 }
 
 export async function register(req: Request, res: Response) {
