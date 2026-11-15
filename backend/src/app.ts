@@ -5,6 +5,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import { logger } from "./utils/logger.js";
+import { apiLimiter } from "./middleware/rateLimiters.js";
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.use(
 
 // Middleware: allows Express to read JSON request bodies
 app.use(express.json());
+// Apply general rate limiting to API routes
+app.use("/api", apiLimiter);
 
 // Root endpoint
 app.get("/", (req, res) => {
