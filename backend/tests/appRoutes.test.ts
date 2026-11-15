@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { errorHandler } from "../src/middleware/errorHandler.js";
 import { logger } from "../src/utils/logger.js";
+import { ApiError } from "../src/utils/ApiError.js";
 
 vi.mock("../src/db/prisma.js", () => ({
   prisma: {
@@ -23,6 +24,7 @@ vi.mock("../src/db/prisma.js", () => ({
 vi.mock("../src/utils/logger.js", () => ({
   logger: {
     error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -93,7 +95,7 @@ describe("Application Routes Integration Tests", () => {
   });
 
   describe("Global Error Handler", () => {
-    it("should return a generic 500 response for unexpected errors", async () => {
+    it("should return a generic 500 response for unexpected errors", () => {
       vi.mocked(logger.error).mockClear();
 
       const req = {} as import("express").Request;
@@ -106,13 +108,44 @@ describe("Application Routes Integration Tests", () => {
 
       errorHandler(new Error("Unexpected database error"), req, res, next);
 
-      expect(logger.error).toHaveBeenCalledWith({ err: expect.any(Error) }, "API Error");
+      expect(logger.error).toHaveBeenCalledWith({ err: expect.any(Error) }, "Unexpected API error");
 
       expect(res.status).toHaveBeenCalledWith(500);
 
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         message: "Internal server error",
+      });
+
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("should return the correct status and message for ApiError", () => {
+      vi.mocked(logger.warn).mockClear();
+
+      const req = {} as import("express").Request;
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockReturnThis(),
+      } as unknown as import("express").Response;
+
+      const next = vi.fn();
+
+      errorHandler(new ApiError(404, "Expense not found"), req, res, next);
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          statusCode: 404,
+          message: "Expense not found",
+        },
+        "API request error",
+      );
+
+      expect(res.status).toHaveBeenCalledWith(404);
+
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: "Expense not found",
       });
 
       expect(next).not.toHaveBeenCalled();
