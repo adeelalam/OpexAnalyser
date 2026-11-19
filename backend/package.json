@@ -10,8 +10,10 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "db:generate": "prisma generate",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\" \"vitest.config.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\" \"vitest.config.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\" \"vitest.config.ts\"",
+    "db:migrate:deploy": "prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
