@@ -186,6 +186,75 @@ cd frontend
 npm run build
 ```
 
+## Running with Docker Compose
+
+### Prerequisites
+
+- Docker Desktop installed and running.
+- PostgreSQL running on the host machine.
+- A configured Docker environment file.
+
+### Environment Configuration
+
+Create `backend/.env.docker` using the required environment variables documented in `backend/.env.example`.
+
+For the PostgreSQL connection, use `host.docker.internal` as the database hostname because PostgreSQL runs on the host machine rather than inside Docker.
+
+Keep environment files containing passwords, JWT secrets, or other credentials out of Git.
+
+### Start the Backend
+
+Run these commands from the project root:
+
+```bash
+docker compose up -d --build
+```
+
+This builds the backend image and starts the container.
+
+### Check Container Status
+
+```bash
+docker compose ps
+```
+
+The backend should report a healthy status.
+
+### View Backend Logs
+
+```bash
+docker compose logs -f backend
+```
+
+Press `Ctrl+C` to stop following the logs.
+
+### Stop the Backend
+
+```bash
+docker compose down
+```
+
+### Restart the Backend
+
+```bash
+docker compose restart backend
+```
+
+### API Health Checks
+
+Once the container is running, access:
+
+- API health: http://localhost:3000/health
+- Database health: http://localhost:3000/health/database
+
+The backend is published on `127.0.0.1:3000`, so it is accessible locally rather than through other network interfaces.
+
+### Docker Configuration
+
+- `backend/Dockerfile` — Multi-stage production build.
+- `backend/.dockerignore` — Excludes unnecessary files and secrets from the build context.
+- `docker-compose.yml` — Defines the backend service, environment configuration, port mapping, restart policy and health check.
+
 ## Current Features
 
 ### Expense Management
@@ -276,6 +345,14 @@ Authorization: Bearer YOUR_JWT_TOKEN
 - [x] Authentication session persistence
 - [x] Logout functionality
 - [x] Manual authentication and API testing
+- [x] Backend Docker containerization
+- [x] Multi-stage production Docker build
+- [x] Docker Compose configuration
+- [x] Docker health checks
+- [x] Docker restart policy
+- [x] Local-only backend port binding
+
+### Remaining
 
 ### Remaining
 
@@ -288,7 +365,9 @@ Authorization: Bearer YOUR_JWT_TOKEN
 - [ ] Automated backend and frontend testing
 - [ ] Improved responsive navigation
 - [ ] Production security improvements
-- [ ] Production deployment
+- [ ] Cloud deployment
+- [ ] Production database hosting
+- [ ] CI/CD pipeline
 
 ## Learning Objectives
 
